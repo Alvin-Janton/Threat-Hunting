@@ -19,6 +19,7 @@ In this project I showcase how to:
 ---
 
 ## 📁 Repository Structure
+```graphql
 project-root/
 │
 ├── README.md                  # Project overview (this file)
@@ -39,6 +40,7 @@ project-root/
     ├── clean_cloudtrail.py    # Cleaning and preprocessing
     ├── extract_s3_events.py   # Filtering S3-related activity
     └── visualize.py           # Graphs and timeline visualizations
+```
 
 ---
 
