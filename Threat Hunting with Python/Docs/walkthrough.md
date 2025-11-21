@@ -53,7 +53,7 @@ python3 -m venv venv # Linux/Mac
 > Note: The final argument (venv) is the folder name. You can name it anything you want.
 
 After this, you should see a new folder in your directory with the name you selected.
-[Picture](../report/images/VENV%20Setup.png)
+![Picture](../report/images/VENV%20Setup.png)
 
 ### Activate Environment
 Once you've created your virtual environment, you want to activate it. To do this, run
@@ -66,7 +66,7 @@ source venv/bin/activate  # Linux/Mac
 
 If successful, you will see the environment name appear at the beginning of your terminal path.
 
-[Picture](../report/images/Activate%20VENV.png)
+![Picture](../report/images/Activate%20VENV.png)
 
 > Note: To exit a virtual environment, just enter the command `deactivate` in the terminal
 
@@ -87,7 +87,7 @@ pip list
 > Note: You may see more packages installed than those listed in requirements.txt.
 This is normal, libraries often depend on other libraries. You should keep these extra dependencies.
 
-[Picture](../report/images/Installing%20Dependencies.png)
+![Picture](../report/images/Installing%20Dependencies.png)
 > Note: If you want to create a requirements.txt file run the command `pip freeze > requirements.txt` This will list all of your dependencies and their versions that you have installed into a portable file.
 
 ### Configure Your IDE
