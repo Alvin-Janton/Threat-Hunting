@@ -6,7 +6,7 @@ Before beginning this project, I needed to set up my Python environment, install
 ### ⚙️ Environment & Tools
 - For this project, I am using **Python 3.13** in **VS Code**.
 - My dependencies include: **pandas**, **ipykernel**, **matplotlib**, **jupyter**, and **seaborn**.  
-  You can view exact versions in my [`requirements.txt`](../requirements.txt) file.
+  You can view exact versions in my [`requirements.txt`](../src/requirements.txt) file.
 
 ### 📘 Playbook Selection
 I selected the **IRP-DataAccess** playbook from the AWS Incident Response Playbooks collection.  
