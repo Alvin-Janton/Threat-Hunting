@@ -116,11 +116,74 @@ These steps form the foundation for the rest of the analysis.
 
 Before converting anything into pandas, I wanted to get a sense of what a single CloudTrail event looks like. Each event contains nested fields such as `userIdentity`, `eventSource`, `eventName`, `requestParameters`, and timestamps.  
 
-Instead of printing the logs directly to the terminal—which becomes unreadable due to their length—I wrote a small helper function that extracts the first few events and writes them to a separate JSON file. This keeps things clean and allows me to reference the preview later in the project.
+Instead of printing the logs directly to the terminal, which becomes unreadable due to their length. I wrote two small helper function that extracts the first few events and writes them to a separate JSON file. This keeps things clean and allows me to reference the preview later in the project.
 
-👉 **Place code block for `preview_raw_events()` here**
+```python
+def preview_raw_events(file_path, num_lines=5):
+    """Reads the first N lines of a CloudTrail JSON Lines file."""
+    events = []
+    with open(file_path, "r", encoding="utf-8") as f:
+        for _ in range(num_lines):
+            line = f.readline()
+            if not line:
+                break
+            events.append(json.loads(line))
+    return events
+```
 
-👉 **Place screenshot of `raw_preview.json` here**
+```python
+def save_preview_to_json(events, output_path):
+    """Save pretty-printed raw events to a JSON file."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as outfile:
+        for idx, event in enumerate(events, start=1):
+            outfile.write(f"--- Event {idx} ---\n")
+            outfile.write(json.dumps(event, indent=2))
+            outfile.write("\n\n")
+```
+
+Here's a snippet of what one of the event lines looks like the preview file
+
+```json
+--- Event 1 ---
+{
+  "requestParameters": {
+    "DescribeInstanceTypesRequest": {
+      "NextToken": "AAIAAUCZLcGdOTmfTz2Vwy7qCVgVq6KNMDDo2s_UFVQdUl8JzmoaM3geYg-eTVO56npOwVkgRcbnccOAIh5xaIntUaFwx3Yzg5z0gJcGwKSvIHr7PoKDSMugzTo27wztP16CU4jRhTPQdzL5kAyA8MMWqgrYKoT5J0xc",
+      "MaxResults": 100
+    }
+  },
+  "userAgent": "console.ec2.amazonaws.com",
+  "awsRegion": "us-east-1",
+  "eventType": "AwsApiCall",
+  "@version": "1",
+  "userIdentity": {
+    "arn": "arn:aws:iam::123456789123:user/pedro",
+    "type": "IAMUser",
+    "userName": "pedro",
+    "sessionContext": {
+      "webIdFederationData": {},
+      "sessionIssuer": {},
+      "attributes": {
+        "mfaAuthenticated": "true",
+        "creationDate": "2020-09-13T17:16:47Z"
+      }
+    },
+    "accountId": "123456789123",
+    "principalId": "AIDAICAK2CN5MGHIIDIHA",
+    "accessKeyId": "ASIA5FLZVX4OI4ZDQJOL"
+  },
+  "recipientAccountId": "123456789123",
+  "responseElements": null,
+  "eventName": "DescribeInstanceTypes",
+  "sourceIPAddress": "1.2.3.4",
+  "eventSource": "ec2.amazonaws.com",
+  "requestID": "2db6a7b5-876c-4995-8258-e6f09d9ef934",
+  "@timestamp": "2020-09-14T00:44:23.000Z",
+  "eventID": "fd4f1042-c7f6-4107-a6ee-d841d92596e7",
+  "eventVersion": "1.05"
+}
+```
 
 This preview confirmed that the dataset contains mixed AWS activity (IAM events, EC2 events, and S3 events), which aligns with the scenario of attackers using compromised EC2 credentials.
 
@@ -130,30 +193,97 @@ This preview confirmed that the dataset contains mixed AWS activity (IAM events,
 
 Next, I loaded the full dataset into a pandas DataFrame. Pandas automatically parses each JSON object as a row and handles nested structures as Python dictionaries.
 
-👉 **Place code block for `load_as_dataframe()` here**
-
-Once loaded, I exported three important views into a Markdown file:
-
-- `df.head()` — first 5 rows  
-- `df.info()` — dataset size, column types, null counts  
-- `df.columns` — the list of available fields  
-
-This approach produces a clean Markdown summary instead of flooding the terminal with output.
-
-👉 **Place screenshot of `df_preview.md` here**
-
+```python
+def load_as_dataframe(file_path):
+    """Loads the entire JSON Lines dataset as a pandas DataFrame."""
+    return pd.read_json(file_path, lines=True)
+```  
 ---
 
 ## 📝 2.3 Generating a Dataset Overview File
 
 To organize the results, I built a helper function that writes all the structural information into a single Markdown file inside the `data/` folder. This file acts as a quick reference for the rest of the investigation.
 
-👉 **Place code block for `generate_markdown_summary()` here**
+```python
+def generate_markdown_summary(df, output_path):
+    """Exports df.head(), df.info(), and df.columns into a markdown file."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Capture df.info() output
+    buffer = StringIO()
+    df.info(buf=buffer)
+    info_text = buffer.getvalue()
+
+    md = []
+    md.append("# Dataset Overview\n")
+    md.append("---\n\n")
+
+    md.append("## 🔹 DataFrame Head (first 5 rows)\n")
+    md.append("```\n")
+    md.append(str(df.head()))
+    md.append("\n```\n\n")
+
+    md.append("## 🔹 DataFrame Info\n")
+    md.append("```\n")
+    md.append(info_text)
+    md.append("```\n\n")
+
+    md.append("## 🔹 Columns\n")
+    md.append("```\n")
+    md.append(str(df.columns.tolist()))
+    md.append("\n```\n\n")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.writelines(md)
+```
+
+Using this helper function I exported three important data views:
+
+- `df.head()` — first 5 rows  
+- `df.info()` — dataset size, column types, null counts  
+- `df.columns` — the list of available fields
+
 
 The resulting file includes:
 - A preview of the data  
 - The full schema  
 - All column names in the dataset  
+
+Here's a snippet showing the output of `df.info()`
+
+```
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 103 entries, 0 to 102
+Data columns (total 22 columns):
+ #   Column               Non-Null Count  Dtype  
+---  ------               --------------  -----  
+ 0   requestParameters    98 non-null     object 
+ 1   userAgent            103 non-null    object 
+ 2   awsRegion            103 non-null    object 
+ 3   eventType            103 non-null    object 
+ 4   @version             103 non-null    int64  
+ 5   userIdentity         103 non-null    object 
+ 6   recipientAccountId   103 non-null    int64  
+ 7   responseElements     5 non-null      object 
+ 8   eventName            103 non-null    object 
+ 9   sourceIPAddress      103 non-null    object 
+ 10  eventSource          103 non-null    object 
+ 11  requestID            103 non-null    object 
+ 12  @timestamp           103 non-null    object 
+ 13  eventID              103 non-null    object 
+ 14  eventVersion         103 non-null    float64
+ 15  apiVersion           3 non-null      object 
+ 16  readOnly             13 non-null     float64
+ 17  sharedEventID        5 non-null      object 
+ 18  resources            14 non-null     object 
+ 19  eventCategory        9 non-null      object 
+ 20  additionalEventData  11 non-null     object 
+ 21  managementEvent      9 non-null      float64
+dtypes: float64(3), int64(2), object(17)
+memory usage: 17.8+ KB
+```
+
+If you want to see the full file for both the JSON and dataframe you can view them in the [data](../data/) Folder.
 
 This provides a clean, readable overview of the log format and helps identify which fields are relevant for S3 threat analysis.
 
