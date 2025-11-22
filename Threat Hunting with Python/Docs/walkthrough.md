@@ -98,5 +98,76 @@ VS Code may still be using your system Python. To change this:
 > Note: If you don't do this, you'll likely get errors stating that the import cannot be found.
 
 That completes the initial setup.
+---
 
+# Step 2: Dataset Exploration
 
+With the environment configured, the next step was to explore the CloudTrail dataset and understand its structure. Because CloudTrail logs are stored in JSON Lines format (one JSON object per line), the file can look overwhelming when viewed as plain text. To make the investigation easier, I wrote a small script that:
+
+1. Previews the first few raw events  
+2. Loads the entire dataset into a pandas DataFrame  
+3. Exports key information (head, schema, column names) into a Markdown file for clean viewing
+
+These steps form the foundation for the rest of the analysis.
+
+---
+
+## 🔍 2.1 Previewing Raw JSON Events
+
+Before converting anything into pandas, I wanted to get a sense of what a single CloudTrail event looks like. Each event contains nested fields such as `userIdentity`, `eventSource`, `eventName`, `requestParameters`, and timestamps.  
+
+Instead of printing the logs directly to the terminal—which becomes unreadable due to their length—I wrote a small helper function that extracts the first few events and writes them to a separate JSON file. This keeps things clean and allows me to reference the preview later in the project.
+
+👉 **Place code block for `preview_raw_events()` here**
+
+👉 **Place screenshot of `raw_preview.json` here**
+
+This preview confirmed that the dataset contains mixed AWS activity (IAM events, EC2 events, and S3 events), which aligns with the scenario of attackers using compromised EC2 credentials.
+
+---
+
+## 📊 2.2 Loading the Dataset Into a DataFrame
+
+Next, I loaded the full dataset into a pandas DataFrame. Pandas automatically parses each JSON object as a row and handles nested structures as Python dictionaries.
+
+👉 **Place code block for `load_as_dataframe()` here**
+
+Once loaded, I exported three important views into a Markdown file:
+
+- `df.head()` — first 5 rows  
+- `df.info()` — dataset size, column types, null counts  
+- `df.columns` — the list of available fields  
+
+This approach produces a clean Markdown summary instead of flooding the terminal with output.
+
+👉 **Place screenshot of `df_preview.md` here**
+
+---
+
+## 📝 2.3 Generating a Dataset Overview File
+
+To organize the results, I built a helper function that writes all the structural information into a single Markdown file inside the `data/` folder. This file acts as a quick reference for the rest of the investigation.
+
+👉 **Place code block for `generate_markdown_summary()` here**
+
+The resulting file includes:
+- A preview of the data  
+- The full schema  
+- All column names in the dataset  
+
+This provides a clean, readable overview of the log format and helps identify which fields are relevant for S3 threat analysis.
+
+---
+
+## ✅ Summary of Findings from Dataset Exploration
+
+From this initial exploration, I learned that:
+
+- The dataset contains CloudTrail events from several AWS services (EC2, IAM, S3, STS).  
+- Many fields are nested, meaning I will need to flatten or normalize certain columns in later steps.  
+- The dataset includes multiple S3-related event types, which is critical for analyzing unintended S3 access.  
+- Structuring the preview in JSON and Markdown format makes the investigation easier and cleaner.
+
+With the dataset now understood at a high level, the next step is to begin isolating S3 activity and applying the threat-hunting playbook.
+
+--- 

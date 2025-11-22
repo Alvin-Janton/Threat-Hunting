@@ -1,0 +1,213 @@
+--- Event 1 ---
+{
+  "requestParameters": {
+    "DescribeInstanceTypesRequest": {
+      "NextToken": "AAIAAUCZLcGdOTmfTz2Vwy7qCVgVq6KNMDDo2s_UFVQdUl8JzmoaM3geYg-eTVO56npOwVkgRcbnccOAIh5xaIntUaFwx3Yzg5z0gJcGwKSvIHr7PoKDSMugzTo27wztP16CU4jRhTPQdzL5kAyA8MMWqgrYKoT5J0xc",
+      "MaxResults": 100
+    }
+  },
+  "userAgent": "console.ec2.amazonaws.com",
+  "awsRegion": "us-east-1",
+  "eventType": "AwsApiCall",
+  "@version": "1",
+  "userIdentity": {
+    "arn": "arn:aws:iam::123456789123:user/pedro",
+    "type": "IAMUser",
+    "userName": "pedro",
+    "sessionContext": {
+      "webIdFederationData": {},
+      "sessionIssuer": {},
+      "attributes": {
+        "mfaAuthenticated": "true",
+        "creationDate": "2020-09-13T17:16:47Z"
+      }
+    },
+    "accountId": "123456789123",
+    "principalId": "AIDAICAK2CN5MGHIIDIHA",
+    "accessKeyId": "ASIA5FLZVX4OI4ZDQJOL"
+  },
+  "recipientAccountId": "123456789123",
+  "responseElements": null,
+  "eventName": "DescribeInstanceTypes",
+  "sourceIPAddress": "1.2.3.4",
+  "eventSource": "ec2.amazonaws.com",
+  "requestID": "2db6a7b5-876c-4995-8258-e6f09d9ef934",
+  "@timestamp": "2020-09-14T00:44:23.000Z",
+  "eventID": "fd4f1042-c7f6-4107-a6ee-d841d92596e7",
+  "eventVersion": "1.05"
+}
+
+--- Event 2 ---
+{
+  "requestParameters": {
+    "filterSet": {},
+    "instancesSet": {
+      "items": [
+        {
+          "instanceId": "i-044b1baf4c96e1b62"
+        }
+      ]
+    }
+  },
+  "userAgent": "console.ec2.amazonaws.com",
+  "awsRegion": "us-east-1",
+  "eventType": "AwsApiCall",
+  "@version": "1",
+  "userIdentity": {
+    "arn": "arn:aws:iam::123456789123:user/pedro",
+    "type": "IAMUser",
+    "userName": "pedro",
+    "sessionContext": {
+      "webIdFederationData": {},
+      "sessionIssuer": {},
+      "attributes": {
+        "mfaAuthenticated": "true",
+        "creationDate": "2020-09-13T17:16:47Z"
+      }
+    },
+    "accountId": "123456789123",
+    "principalId": "AIDAICAK2CN5MGHIIDIHA",
+    "accessKeyId": "ASIA5FLZVX4OI4ZDQJOL"
+  },
+  "recipientAccountId": "123456789123",
+  "responseElements": null,
+  "eventName": "DescribeInstances",
+  "sourceIPAddress": "1.2.3.4",
+  "eventSource": "ec2.amazonaws.com",
+  "requestID": "2b757038-7f45-4e5b-b38d-b83a3acb7eab",
+  "@timestamp": "2020-09-14T00:44:24.000Z",
+  "eventID": "a3d34faf-076e-44ff-b2f7-605d76705a81",
+  "eventVersion": "1.05"
+}
+
+--- Event 3 ---
+{
+  "requestParameters": {
+    "filterSet": {
+      "items": [
+        {
+          "valueSet": {
+            "items": [
+              {
+                "value": "i-044b1baf4c96e1b62"
+              }
+            ]
+          },
+          "name": "instance-id"
+        }
+      ]
+    },
+    "allocationIdsSet": {},
+    "publicIpsSet": {}
+  },
+  "userAgent": "console.ec2.amazonaws.com",
+  "awsRegion": "us-east-1",
+  "eventType": "AwsApiCall",
+  "@version": "1",
+  "userIdentity": {
+    "arn": "arn:aws:iam::123456789123:user/pedro",
+    "type": "IAMUser",
+    "userName": "pedro",
+    "sessionContext": {
+      "webIdFederationData": {},
+      "sessionIssuer": {},
+      "attributes": {
+        "mfaAuthenticated": "true",
+        "creationDate": "2020-09-13T17:16:47Z"
+      }
+    },
+    "accountId": "123456789123",
+    "principalId": "AIDAICAK2CN5MGHIIDIHA",
+    "accessKeyId": "ASIA5FLZVX4OI4ZDQJOL"
+  },
+  "recipientAccountId": "123456789123",
+  "responseElements": null,
+  "eventName": "DescribeAddresses",
+  "sourceIPAddress": "1.2.3.4",
+  "eventSource": "ec2.amazonaws.com",
+  "requestID": "bb76133d-5a9e-47aa-960d-4f023e30883d",
+  "@timestamp": "2020-09-14T00:44:24.000Z",
+  "eventID": "53bb6d95-8860-4dc1-8bd8-be013478fd8b",
+  "eventVersion": "1.05"
+}
+
+--- Event 4 ---
+{
+  "requestParameters": {
+    "filterSet": {},
+    "instancesSet": {
+      "items": [
+        {
+          "instanceId": "i-044b1baf4c96e1b62"
+        }
+      ]
+    }
+  },
+  "userAgent": "console.ec2.amazonaws.com",
+  "awsRegion": "us-east-1",
+  "eventType": "AwsApiCall",
+  "@version": "1",
+  "userIdentity": {
+    "arn": "arn:aws:iam::123456789123:user/pedro",
+    "type": "IAMUser",
+    "userName": "pedro",
+    "sessionContext": {
+      "webIdFederationData": {},
+      "sessionIssuer": {},
+      "attributes": {
+        "mfaAuthenticated": "true",
+        "creationDate": "2020-09-13T17:16:47Z"
+      }
+    },
+    "accountId": "123456789123",
+    "principalId": "AIDAICAK2CN5MGHIIDIHA",
+    "accessKeyId": "ASIA5FLZVX4OI4ZDQJOL"
+  },
+  "recipientAccountId": "123456789123",
+  "responseElements": null,
+  "eventName": "DescribeInstances",
+  "sourceIPAddress": "1.2.3.4",
+  "eventSource": "ec2.amazonaws.com",
+  "requestID": "d717fe45-c9bc-42f3-b353-704309a8f1b7",
+  "@timestamp": "2020-09-14T00:44:23.000Z",
+  "eventID": "d51c533f-2427-4474-aef9-4169a23abf08",
+  "eventVersion": "1.05"
+}
+
+--- Event 5 ---
+{
+  "requestParameters": {
+    "attribute": "disableApiTermination",
+    "instanceId": "i-044b1baf4c96e1b62"
+  },
+  "userAgent": "console.ec2.amazonaws.com",
+  "awsRegion": "us-east-1",
+  "eventType": "AwsApiCall",
+  "@version": "1",
+  "userIdentity": {
+    "arn": "arn:aws:iam::123456789123:user/pedro",
+    "type": "IAMUser",
+    "userName": "pedro",
+    "sessionContext": {
+      "webIdFederationData": {},
+      "sessionIssuer": {},
+      "attributes": {
+        "mfaAuthenticated": "true",
+        "creationDate": "2020-09-13T17:16:47Z"
+      }
+    },
+    "accountId": "123456789123",
+    "principalId": "AIDAICAK2CN5MGHIIDIHA",
+    "accessKeyId": "ASIA5FLZVX4OI4ZDQJOL"
+  },
+  "recipientAccountId": "123456789123",
+  "responseElements": null,
+  "eventName": "DescribeInstanceAttribute",
+  "sourceIPAddress": "1.2.3.4",
+  "eventSource": "ec2.amazonaws.com",
+  "requestID": "6bba95c3-62ce-483e-9d46-d58bb1cfa26e",
+  "@timestamp": "2020-09-14T00:44:24.000Z",
+  "eventID": "1e2bf051-8907-4aa7-8aed-b67d6eb016d6",
+  "eventVersion": "1.05"
+}
+
