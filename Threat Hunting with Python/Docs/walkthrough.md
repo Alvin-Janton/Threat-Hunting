@@ -136,7 +136,7 @@ RAW_LOGS_PREVIEW = DATA_DIR / "raw_preview.json"
 DATAFRAME_PREVIEW = DATA_DIR / "df_preview.md"
 ```
 
-## 🔍 2.1 Previewing Raw JSON Events
+## 🔍 2.2 Previewing Raw JSON Events
 
 Before converting anything into pandas, I wanted to get a sense of what a single CloudTrail event looks like. Each event contains nested fields such as `userIdentity`, `eventSource`, `eventName`, `requestParameters`, and timestamps.  
 
@@ -213,7 +213,7 @@ This preview confirmed that the dataset contains mixed AWS activity (IAM events,
 
 ---
 
-## 📊 2.2 Loading the Dataset Into a DataFrame
+## 📊 2.3 Loading the Dataset Into a DataFrame
 
 Next, I loaded the full dataset into a pandas DataFrame. Pandas automatically parses each JSON object as a row and handles nested structures as Python dictionaries.
 
@@ -224,7 +224,7 @@ def load_as_dataframe(file_path):
 ```  
 ---
 
-## 📝 2.3 Generating a Dataset Overview File
+## 📝 2.4 Generating a Dataset Overview File
 
 To organize the results, I built a helper function that writes all the structural information into a single Markdown file inside the `data/` folder. This file acts as a quick reference for the rest of the investigation.
 
