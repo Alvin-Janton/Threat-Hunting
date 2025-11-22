@@ -112,6 +112,30 @@ These steps form the foundation for the rest of the analysis.
 
 ---
 
+##  2.1 Imports and Path
+
+To support this exploration, I imported a few essential Python libraries. The `json` module allows me to load each event from the JSON Lines file, while `pandas` is used to convert the entire dataset into a structured DataFrame for analysis. I also used `Path` from `pathlib` to handle file paths in a portable and consistent way, and `StringIO` to capture the output of `df.info()` so it could be exported cleanly into a Markdown summary file. These imports provide everything needed to inspect the dataset before moving into deeper analysis.
+
+```python
+import json
+import pandas as pd
+from pathlib import Path
+from io import StringIO
+```
+---
+
+Instead of hard-coding long absolute paths, I structured my project so all datasets and preview files live inside a dedicated `data/` directory. I used Python’s `Path` object to build these paths dynamically, which ensures the script remains portable across machines and works even if the project folder is moved. This also keeps all data-related artifacts organized in a single location, making the investigation easier to follow and reproduce.
+
+```python
+# Base paths (relative to this script)
+BASE_DIR = Path(__file__).resolve().parents[1]   # project root (…/Threat hunting with python)
+DATA_DIR = BASE_DIR / "data"
+
+LOG_FILE = DATA_DIR / "ec2_proxy_s3_exfiltration" / "ec2_proxy_s3_exfiltration_2020-09-14011940.json"
+RAW_LOGS_PREVIEW = DATA_DIR / "raw_preview.json"
+DATAFRAME_PREVIEW = DATA_DIR / "df_preview.md"
+```
+
 ## 🔍 2.1 Previewing Raw JSON Events
 
 Before converting anything into pandas, I wanted to get a sense of what a single CloudTrail event looks like. Each event contains nested fields such as `userIdentity`, `eventSource`, `eventName`, `requestParameters`, and timestamps.  
