@@ -325,3 +325,135 @@ From this initial exploration, I learned that:
 With the dataset now understood at a high level, the next step is to begin isolating S3 activity and applying the threat-hunting playbook.
 
 --- 
+# Step 3: Filtering for S3-Related Activity
+
+Now that I understand the overall structure of the dataset, the next step is to narrow the focus to the events that matter most for this investigation: activity involving Amazon S3. The original CloudTrail file contains a mix of EC2, IAM, STS, and S3 events, but the playbook I’m following (IRP–DataAccess) is specifically concerned with unauthorized or unintended data access. That means S3-related events are the most relevant for identifying potential exfiltration behavior.
+
+Rather than cleaning and transforming every event in the dataset, I first filter down to only the CloudTrail entries where `eventSource` corresponds to S3. From there, I separate S3 activity into two high-level categories:
+
+- **Management events** – configuration-style actions (for example, listing buckets or modifying bucket policies)
+- **Data events** – direct access to objects and data (for example, listing objects or reading objects from a bucket)
+
+This separation mirrors how AWS itself classifies S3 events and aligns well with the incident-response playbook. Management events help reveal how an attacker discovers or sets up access to a bucket, while data events show how they actually interact with and exfiltrate contents. The goal of this step is to create smaller, focused DataFrames for S3 management and S3 data access activity that I can analyze more deeply in later steps.
+
+## Step 3.1 Filtering S3 Events
+
+To begin this step, I created a new Python script named `filter_s3_events.py`. I copied over the same imports and project-path definitions used in the previous file so both scripts share a consistent structure. I also reused the `load_as_dataframe()` method to load the full CloudTrail dataset into a pandas DataFrame.
+
+Next, I wrote a function that filters the DataFrame to include only the rows where the `eventSource` equals `"s3.amazonaws.com"`.
+
+```python
+def filter_s3_events(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Returns only the rows where eventSource corresponds to S3.
+    """
+    s3_df = df[df["eventSource"] == "s3.amazonaws.com"].copy()
+    return s3_df
+```
+
+Finally, in the main method I to print the number of S3 related events that exist in the dataset, as well as a list of the different event sources and how many times they show up.
+
+```python
+if __name__ == "__main__":
+    print("Loading full CloudTrail dataset...")
+    df = load_as_dataframe(LOG_FILE)
+    print(f"   Total events: {len(df)}")
+
+    print("\nFiltering for S3-related events (eventSource == 's3.amazonaws.com')...")
+    s3_df = filter_s3_events(df)
+    print(f"   S3 events: {len(s3_df)}")
+
+    print("\nUnique S3 event names:")
+    print(s3_df["eventName"].value_counts())
+```
+
+The output clearly shows a sequence of S3 actions consistent with bucket enumeration and object access:
+
+```text
+Loading full CloudTrail dataset...
+  Total events: 103
+
+Filtering for S3-related events (eventSource == 's3.amazonaws.com')...
+  S3 events: 11
+
+Unique S3 event names:
+eventName
+ListObjects    7
+GetObject      2
+ListBuckets    2
+Name: count, dtype: int64
+```
+
+This gives me a strong initial indication that the attacker enumerated buckets, enumerated objects, and then downloaded objects, behavior fully consistent with S3 exfiltration.
+
+## Step 3.2 Event Classification
+In this step, I classify the S3 events into two separate DataFrames: one for `management events` and one for `data-access events`. Management events deal with high-level resource enumeration, while data-access events represent direct interaction with bucket contents. After classifying the events, I export each category to a CSV file for further analysis.
+
+### Creating Files and Variables
+I first defined the paths for the CSV files that will store the results:
+
+```python
+S3_ALL = DATA_DIR / "s3_all_events.csv"
+S3_MANAGEMENT = DATA_DIR / "s3_management_events.csv"
+S3_DATA = DATA_DIR / "s3_data_events.csv"
+```
+
+###
+Next, I created two sets containing the S3 `eventName` values that belong to each category:
+
+```python
+# Define which S3 operations belong to which category
+S3_MANAGEMENT_EVENTS = {
+    "ListBuckets"
+}
+
+S3_DATA_EVENTS = {
+    "ListObjects",
+    "GetObject"
+}
+```
+
+### Splitting S3 Categories
+Then, I wrote a function that separates the S3 DataFrame into two subsets: one for management events and one for data-access events.
+
+```python
+def split_s3_categories(s3_df: pd.DataFrame):
+    """
+    Splits S3 events into management vs data-access DataFrames.
+    """
+    management_df = s3_df[s3_df["eventName"].isin(S3_MANAGEMENT_EVENTS)].copy()
+    data_df = s3_df[s3_df["eventName"].isin(S3_DATA_EVENTS)].copy()
+
+    return management_df, data_df
+```
+---
+
+### Exploring Results
+
+Finally, in the main block of the script, I used this classification function, printed the counts for each category, and exported all three DataFrames to CSV files inside the data/ directory:
+
+```python
+if __name__ == "__main__":
+
+    df = load_as_dataframe(LOG_FILE)
+
+    s3_df = filter_s3_events(df)
+
+    print("\n📁 Splitting S3 events into categories...")
+    management_df, data_df = split_s3_categories(s3_df)
+
+    print(f"   Management events: {len(management_df)}")
+    print(f"   Data-access events: {len(data_df)}")
+
+    # Save results
+    management_df.to_csv(S3_MANAGEMENT, index=False)
+    data_df.to_csv(S3_DATA, index=False)
+    s3_df.to_csv(S3_ALL, index=False)
+
+    print("\n💾 Saved filtered files to /data/:")
+    print(f"   - All S3 events:       {S3_ALL.name}")
+    print(f"   - Management events:   {S3_MANAGEMENT.name}")
+    print(f"   - Data-access events:  {S3_DATA.name}")
+```
+This step produces clean, focused datasets that isolate the attacker’s S3 behavior and prepare the groundwork for deeper analysis in the next phase.
+
