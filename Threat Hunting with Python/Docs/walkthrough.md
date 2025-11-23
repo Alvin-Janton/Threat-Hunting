@@ -681,12 +681,6 @@ All enriched S3 events share the same IAM identity values:
 
 The suffix of the principalId (`i-0317f6c6b66ae9c40`) reveals that the assumed role belongs to an **EC2 instance profile**. This strongly indicates that an adversary obtained temporary credentials from this EC2 instance and is now using them externally.
 
-This matches the known dataset scenario:
-
-*Adversaries abused a misconfigured EC2 reverse proxy to obtain instance profile keys.*
-
-_Insert screenshot of enriched events here._
-
 ---
 
 ## 5.2 Attacker Tooling and Environment
@@ -763,7 +757,10 @@ This indicates:
 
 The fact that both exfiltration events occur after enumeration strongly supports the hypothesis that the attacker intentionally accessed the bucket for data theft.
 
-_Insert screenshot of GetObject rows here._
+```jsonl
+{"timestamp":"2020-09-14T01:02:34.000Z","eventName":"GetObject","bucketName":"mordors3stack-s3bucket-llp2yingx64a","objectKey":"ring.txt","sourceIPAddress":"1.2.3.4","awsRegion":"us-east-1","userType":"AssumedRole","userName":null,"principalId":"AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40","accessKeyId":"ASIA5FLZVX4OPVKKVBMX","userAgent":"[aws-cli\/1.18.136 Python\/3.8.5 Darwin\/19.5.0 botocore\/1.17.59]"}
+{"timestamp":"2020-09-14T01:13:20.000Z","eventName":"GetObject","bucketName":"mordors3stack-s3bucket-llp2yingx64a","objectKey":"ring.txt","sourceIPAddress":"1.2.3.4","awsRegion":"us-east-1","userType":"AssumedRole","userName":null,"principalId":"AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40","accessKeyId":"ASIA5FLZVX4OPVKKVBMX","userAgent":"[aws-cli\/1.18.136 Python\/3.8.5 Darwin\/19.5.0 botocore\/1.17.59]"}
+```
 
 ---
 
@@ -812,7 +809,74 @@ These findings confirm that the attacker accessed the S3 bucket intentionally, m
 
 ---
 
-## 5.8 Next Steps
+## 5.8 Extended Search for Attacker Activity (Indicator Pivoting)
+
+After enriching the S3 events, the next step was to determine whether the attacker performed any additional actions outside of S3. In real incident response workflows, this is known as **pivoting on indicators**, taking known malicious identifiers and searching the rest of the dataset to uncover related activity.
+
+To perform a thorough investigation, I ran **three independent searches** across the full CloudTrail dataset using the following indicators extracted from the enriched S3 logs:
+
+- **principalId**: identifies the compromised EC2 instance role  
+- **accessKeyId**: identifies the stolen temporary credentials  
+- **userAgent**: identifies the attacker's tooling (AWS CLI on macOS)
+
+These three pieces of evidence act as stable identifiers for the attacker’s session.
+
+I created a new script called `extended_search.py` that loads the full dataset and performs three separate pivot queries:
+
+- **Pivot 1:** Search for all events with the same `principalId`
+- **Pivot 2:** Search for all events with the same `accessKeyId`
+- **Pivot 3:** Search for all events with the same `userAgent`
+
+Each pivot is exported to its own JSONL file, and a combined JSONL file is created for consolidated review.
+
+```python
+# Extract nested fields for searching
+    df["principalId"] = df["userIdentity"].apply(lambda x: safe_get(x, "principalId"))
+    df["accessKeyId"] = df["userIdentity"].apply(lambda x: safe_get(x, "accessKeyId"))
+    df["ua"] = df["userAgent"]
+
+    print("\nRunning independent pivot searches...")
+
+    # ---- Pivot 1: principalId ----
+    pivot_principal = df[df["principalId"] == COMPROMISED_PRINCIPAL]
+    save_jsonl(pivot_principal, OUT_PRINCIPAL)
+
+    # ---- Pivot 2: accessKeyId ----
+    pivot_access = df[df["accessKeyId"] == COMPROMISED_ACCESSKEY]
+    save_jsonl(pivot_access, OUT_ACCESSKEY)
+
+    # ---- Pivot 3: userAgent ----
+    pivot_ua = df[df["ua"] == COMPROMISED_USERAGENT]
+    save_jsonl(pivot_ua, OUT_USERAGENT)
+
+    # Combined JSONL for full review
+    combined = pd.concat([pivot_principal, pivot_access, pivot_ua],ignore_index=True)
+
+    # Use eventID (hashable string) to drop duplicates safely
+    if "eventID" in combined.columns:
+        combined = combined.drop_duplicates(subset=["eventID"])
+
+    save_jsonl(combined, OUT_COMBINED_JSON)
+```
+
+Running these searches ensures that I not only identify the S3-related behavior, but also verify whether the attacker interacted with any other AWS services (such as IAM, EC2, STS, or CloudFormation). This is critical for detecting privilege escalation attempts or lateral movement.
+
+After reviewing all three pivot results, every matching event belonged to the same S3 activity already identified earlier in the investigation. No additional IAM, EC2, STS, or other API calls were made using the compromised credentials.
+
+This confirms that the attacker:
+
+- used a single stolen role session  
+- performed two waves of S3 reconnaissance  
+- downloaded the target file twice  
+- **and did not attempt additional modifications or privilege escalation**
+
+The extended search provides confidence that the attack was limited in scope but still involved unauthorized data access.
+
+It’s important to note that this conclusion is scoped to the provided dataset. In a real-world response, the next step would be to run the same IOCs across a wider time range and additional log sources (for example, CloudTrail in other regions, VPC Flow Logs, or guardrails like GuardDuty). However, for this project’s log window, the IOC pivot supports a contained narrative: the compromised EC2 role was used specifically to discover and exfiltrate data from a single S3 bucket, with no further activity observed.
+
+---
+
+## 5.9 Next Steps
 
 With the investigation complete, the next step is to produce a formal incident report summarizing what happened, the attacker’s behavior, the potential impact, and recommended remediation actions.
 
