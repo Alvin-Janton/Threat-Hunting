@@ -660,7 +660,161 @@ After the enrichment step:
 - The investigation now has a clean foundation for **timeline reconstruction** and **incident reporting**
 
 The next step is to begin analyzing the enriched dataset to build the full narrative of the attack.
+---
+
+# Step 5: Analysis and Timeline Reconstruction
+
+With the enriched S3 dataset created in the previous step, the investigation now shifts to analyzing attacker behavior and reconstructing the sequence of events. The IRP–DataAccess playbook emphasizes connecting access patterns, IAM identities, tooling, and timestamps to determine what happened, how it happened, and whether any data was exposed.
+
+In this step, I review the enriched events to identify recon activity, data access, and exfiltration. Because the enriched dataset is fully flattened, it becomes much easier to identify behavioral patterns and follow the attacker’s actions over time.
+
+---
+
+## 5.1 Identifying the Attacker’s Identity
+
+All enriched S3 events share the same IAM identity values:
+
+- **userType**:`AssumedRole`
+- **principalId**:`AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40`
+- **accessKeyId**:`ASIA5FLZVX4OPVKKVBMX`
 
 
+The suffix of the principalId (`i-0317f6c6b66ae9c40`) reveals that the assumed role belongs to an **EC2 instance profile**. This strongly indicates that an adversary obtained temporary credentials from this EC2 instance and is now using them externally.
 
+This matches the known dataset scenario:
+
+*Adversaries abused a misconfigured EC2 reverse proxy to obtain instance profile keys.*
+
+_Insert screenshot of enriched events here._
+
+---
+
+## 5.2 Attacker Tooling and Environment
+
+Every enriched event shows the same userAgent string:
+```swift
+[aws-cli/1.18.136 Python/3.8.5 Darwin/19.5.0 botocore/1.17.59]
+```
+
+This reveals several important details:
+
+- The attacker used **AWS CLI**, not the AWS web console
+- They used **Python 3.8.5** and **botocore 1.17.59**
+- The host operating system is **Darwin 19.5.0 (macOS)**
+
+This confirms that the attacker **exfiltrated the keys off the EC2 instance** and is now performing actions from their own macOS device, a strong indicator of credential theft rather than legitimate automation.
+
+---
+
+## 5.3 Source IP Address
+
+All events originate from a single external IP: 
+`1.2.3.4`
+
+This is not an AWS internal address, further confirming that these requests were made from outside AWS using stolen credentials.
+
+---
+
+## 5.4 Reconnaissance Activity
+
+Before accessing any objects, the attacker performs two waves of reconnaissance:
+
+### Reconnaissance Wave 1 (early)
+- `01:00:04`:ListBuckets
+- `01:00:33`:ListObjects
+- `01:00:53`:ListObjects
+- `01:01:04`:ListObjects
+- `01:01:50`:ListBuckets
+
+### Reconnaissance Wave 2 (later)
+- `01:12:40`:ListObjects
+- `01:12:43`:ListObjects
+- `01:13:20`:ListObjects
+
+
+These repeated enumeration attempts suggest:
+
+- The attacker was exploring available buckets
+- They were identifying which objects existed
+- They may have been testing permissions
+- They revisited the bucket after some time possibly confirming continued access
+
+This behavior is fully aligned with the tactics described in the *Unintended S3 Access* playbook.
+
+---
+
+## 5.5 Data Access and Exfiltration
+
+The attacker retrieves the same object twice:
+```makefile
+01:02:34Z → GetObject: ring.txt
+01:13:20Z → GetObject: ring.txt
+```
+
+This indicates:
+
+- The file **ring.txt** is likely the adversary’s target
+- Access was successful
+- The attacker returned for a second copy — possibly:
+  - verifying data integrity
+  - testing persistence
+  - confirming that the credentials still worked
+  - exfiltrating to another location
+
+The fact that both exfiltration events occur after enumeration strongly supports the hypothesis that the attacker intentionally accessed the bucket for data theft.
+
+_Insert screenshot of GetObject rows here._
+
+---
+
+## 5.6 Timeline Reconstruction
+
+Below is a chronological reconstruction of the attacker’s actions:
+
+| Timestamp (UTC)           | Action        | Details                                  |
+|---------------------------|---------------|-------------------------------------------|
+| 2020-09-14 01:00:04       | ListBuckets   | Initial bucket enumeration                |
+| 2020-09-14 01:00:33       | ListObjects   | Investigates S3 bucket contents           |
+| 2020-09-14 01:00:53       | ListObjects   | Continued enumeration                     |
+| 2020-09-14 01:01:04       | ListObjects   | Continued enumeration                     |
+| 2020-09-14 01:01:50       | ListBuckets   | Re-checking bucket list                   |
+| 2020-09-14 01:02:34       | GetObject     | First exfiltration of ring.txt            |
+| 2020-09-14 01:12:40       | ListObjects   | Reconnaissance wave #2                    |
+| 2020-09-14 01:12:43       | ListObjects   | Continued enumeration                     |
+| 2020-09-14 01:13:20       | ListObjects   | Final enumeration before exfil            |
+| 2020-09-14 01:13:20       | GetObject     | Second exfiltration of ring.txt           |
+
+This timeline clearly shows:
+1. Credential theft →
+2. Reconnaissance →
+3. Target identification →
+4. Data exfiltration →
+5. Revalidation →
+6. Second exfiltration
+
+
+This is a complete attack chain consistent with credential compromise.
+
+---
+
+## 5.7 Key Findings
+
+From analyzing the enriched dataset, I determined:
+
+- The adversary used stolen EC2 instance profile credentials.
+- All activity was performed from a macOS machine via AWS CLI.
+- The attacker’s source IP address remained consistent throughout.
+- There were two separate waves of reconnaissance and exfiltration.
+- The sensitive object **ring.txt** was downloaded twice.
+- The sequence strongly aligns with the IRP–DataAccess playbook for unintended S3 access.
+
+These findings confirm that the attacker accessed the S3 bucket intentionally, methodically, and with full awareness of the objects being exfiltrated.
+
+---
+
+## 5.8 Next Steps
+
+With the investigation complete, the next step is to produce a formal incident report summarizing what happened, the attacker’s behavior, the potential impact, and recommended remediation actions.
+
+This will be covered in **Step 6: Incident Report**.
 

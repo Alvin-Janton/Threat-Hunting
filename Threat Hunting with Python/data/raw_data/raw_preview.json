@@ -1,4 +1,5 @@
---- Event 1 ---
+//--- Event 1 ---
+
 {
   "requestParameters": {
     "DescribeInstanceTypesRequest": {
@@ -37,7 +38,7 @@
   "eventVersion": "1.05"
 }
 
---- Event 2 ---
+//--- Event 2 ---
 {
   "requestParameters": {
     "filterSet": {},
@@ -80,7 +81,7 @@
   "eventVersion": "1.05"
 }
 
---- Event 3 ---
+//--- Event 3 ---
 {
   "requestParameters": {
     "filterSet": {
@@ -131,7 +132,7 @@
   "eventVersion": "1.05"
 }
 
---- Event 4 ---
+//--- Event 4 ---
 {
   "requestParameters": {
     "filterSet": {},
@@ -174,7 +175,7 @@
   "eventVersion": "1.05"
 }
 
---- Event 5 ---
+//--- Event 5 ---
 {
   "requestParameters": {
     "attribute": "disableApiTermination",
@@ -210,4 +211,5 @@
   "eventID": "1e2bf051-8907-4aa7-8aed-b67d6eb016d6",
   "eventVersion": "1.05"
 }
+
 

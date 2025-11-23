@@ -10,8 +10,13 @@ DATA_DIR = BASE_DIR / "data"
 LOG_FILE = DATA_DIR / "ec2_proxy_s3_exfiltration" / "ec2_proxy_s3_exfiltration_2020-09-14011940.json"
 
 S3_ALL = DATA_DIR / "s3_all_events.csv"
+S3_ALL_JSON = DATA_DIR / "s3_all_events.json"
+
 S3_MANAGEMENT = DATA_DIR / "s3_management_events.csv"
+S3_MANAGEMENT_JSON = DATA_DIR / "s3_management_events.json"
+
 S3_DATA = DATA_DIR / "s3_data_events.csv"
+S3_DATA_JSON = DATA_DIR / "s3_data_events.json"
 
 
 # Define which S3 operations belong to which category
@@ -66,8 +71,13 @@ if __name__ == "__main__":
 
     # Save results
     management_df.to_csv(S3_MANAGEMENT, index=False)
+    management_df.to_json(S3_MANAGEMENT_JSON, orient="records", lines=True, date_format="iso")
+
     data_df.to_csv(S3_DATA, index=False)
+    data_df.to_json(S3_DATA_JSON, orient="records", lines=True, date_format="iso")
+
     s3_df.to_csv(S3_ALL, index=False)
+    s3_df.to_json(S3_ALL_JSON, orient="records", lines=True, date_format="iso")
 
     print("\n💾 Saved filtered files to /data/:")
     print(f"   - All S3 events:       {S3_ALL.name}")
