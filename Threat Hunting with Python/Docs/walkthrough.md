@@ -456,4 +456,211 @@ if __name__ == "__main__":
     print(f"   - Data-access events:  {S3_DATA.name}")
 ```
 This step produces clean, focused datasets that isolate the attacker’s S3 behavior and prepare the groundwork for deeper analysis in the next phase.
+---
+
+# Step 4: Cleaning and Enriching S3 Events
+
+With S3 activity filtered and categorized, the next step is to transform the raw CloudTrail entries into a format that is easier to analyze. CloudTrail logs are deeply nested JSON objects, and while they contain everything required for an investigation, their structure can make analysis slow and unintuitive.  
+
+To align the dataset with the **IRP–DataAccess** playbook, this enrichment step extracts the most relevant fields, flattens nested structures, and standardizes timestamps for easier correlation.
+
+The goal is to produce a clean, investigation-ready dataset showing **who accessed what, from where, and when**.
+
+---
+
+## 4.1 Why Enrichment Matters
+
+The original CloudTrail event structure includes:
+
+- Deeply nested objects (`userIdentity`, `requestParameters`, etc.)
+- Hard-to-parse timestamps (`@timestamp`)
+- Additional metadata not relevant to S3 access analysis
+
+To perform threat hunting effectively, only a handful of key fields are needed. The enrichment process pulls out these important attributes and flattens them into a simple row-based structure that is easy to filter, sort, and follow chronologically.
+
+In this step, I extract the following fields from each S3 event:
+
+- **timestamp** (converted into a readable format)
+- **eventName** (`ListObjects`, `GetObject`, etc.)
+- **bucketName**
+- **objectKey** (if present)
+- **sourceIPAddress**
+- **awsRegion**
+- **userAgent** (useful for identifying attacker tooling)
+- **IAM identity attributes** (`principalId`, `accessKeyId`, `userType`, etc.)
+
+This produces a clean table representing each S3 action clearly.
+
+---
+
+## 4.2 Creating the Enrichment Script
+
+I created a new Python file named `enrich_s3_events.py`.
+At the top of the file, I imported the same libraries used in earlier steps and reused the same paths and loading functions.
+
+I then wrote a helper function that safely handles nested JSON fields.
+Some CloudTrail fields may appear either as dictionaries or JSON-encoded strings, depending on the event, so this function normalizes everything into a Python dictionary.
+
+```python
+def ensure_dict(value):
+    """
+    Ensures the value is a dictionary.
+    If it's a JSON string, tries to json.loads() it.
+    If it's already a dict or is null/NaN, returns it as-is or {}.
+    """
+    if isinstance(value, dict):
+        return value
+    if pd.isna(value):
+        return {}
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return {}
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+    return {}
+```
+
+---
+
+## 4.3 Flattening Each S3 Event
+
+Next, I created a function to flatten a single S3 event.
+This function extracts the essential fields for the investigation and returns them in a simple dictionary structure.
+
+- `@timestamp`
+- `eventName`
+- `bucketName`
+- `objectKey`
+- `sourceIPAddress`
+- `awsregion`
+- IAM principal details (`userName`, `type`, `principalId`, `accessKeyId`)
+- `userAgent` string (revealing attacker tools/OS)
+
+Flattening the events not only simplifies the dataset but also makes it easier to spot evidence of reconnaissance and exfiltration.
+
+```python
+def flatten_s3_event(row: pd.Series) -> dict:
+    """
+    Flattens a single S3 CloudTrail event into a simpler dict with
+    only the fields needed for investigation.
+    """
+    user_identity = ensure_dict(row.get("userIdentity"))
+    req_params = ensure_dict(row.get("requestParameters"))
+
+    # Basic top-level fields
+    event_time = row.get("@timestamp")
+    event_name = row.get("eventName")
+    source_ip = row.get("sourceIPAddress")
+    region = row.get("awsRegion")
+    user_agent = row.get("userAgent")
+
+    # User identity fields
+    user_type = user_identity.get("type")
+    user_name = user_identity.get("userName")
+    principal_id = user_identity.get("principalId")
+    access_key_id = user_identity.get("accessKeyId")
+
+    # Request parameters: bucket + object key
+    bucket_name = req_params.get("bucketName")
+    object_key = req_params.get("key") or req_params.get("objectKey")
+
+    return {
+        "timestamp": event_time,
+        "eventName": event_name,
+        "bucketName": bucket_name,
+        "objectKey": object_key,
+        "sourceIPAddress": source_ip,
+        "awsRegion": region,
+        "userType": user_type,
+        "userName": user_name,
+        "principalId": principal_id,
+        "accessKeyId": access_key_id,
+        "userAgent": user_agent,
+    }
+```
+
+This produces a standardized structure suitable for both CSV and JSONL output.
+
+---
+
+## 4.4 Saving the Enriched Dataset
+
+After flattening each event, I converted the list of dictionaries into a pandas DataFrame.
+This DataFrame is then exported into two formats:
+
+- **CSV** — readable and sortable for manual inspection
+- **JSON Lines (JSONL)** — ideal for investigative and automation workflows
+
+```python
+if __name__ == "__main__":
+    print("Loading full CloudTrail dataset...")
+    df = load_full_dataset(LOG_FILE)
+    print(f"   Total events: {len(df)}")
+
+    print("\nFiltering for S3-related events...")
+    s3_df = filter_s3_events(df)
+    print(f"   S3 events: {len(s3_df)}")
+
+    print("\nFlattening S3 events into enriched rows...")
+    enriched_rows = [flatten_s3_event(row) for _, row in s3_df.iterrows()]
+    enriched_df = pd.DataFrame(enriched_rows)
+
+    # Convert eventTime to datetime if possible
+    if "timestamp" in enriched_df.columns:
+        enriched_df["timestamp"] = pd.to_datetime(enriched_df["timestamp"], errors="coerce")
+
+    # Save to CSV
+    S3_ENRICHED.parent.mkdir(parents=True, exist_ok=True)
+    enriched_df.to_csv(S3_ENRICHED, index=False)
+    enriched_df.to_json(S3_ENRICHED_JSON, orient="records", lines=True, date_format="iso")
+
+    print(f"\nSaved enriched S3 events to: {S3_ENRICHED}")
+    print(f"Saved enriched JSON to: {S3_ENRICHED_JSON}")
+    print("   Columns included:")
+    print(list(enriched_df.columns))
+```
+
+Both output files are written to the `/data/` directory:
+
+- `s3_enriched_events.csv`
+- `s3_enriched_events.json`
+
+---
+
+## 4.5 What the Enriched Logs Reveal
+
+Even a brief review of the enriched dataset shows a clear pattern of unauthorized activity:
+
+- Multiple `ListObjects` calls against the same bucket
+- A final `GetObject` retrieving the file **ring.txt**
+- All actions coming from the same external IP address
+- Actions performed using an **AssumedRole** associated with an EC2 instance
+- `userAgent` indicates the attacker used AWS CLI from **macOS** outside AWS
+
+A shortened example of an enriched record:
+
+```json
+{"timestamp":"2020-09-14T01:01:04.000Z","eventName":"ListObjects","bucketName":"mordors3stack-s3bucket-llp2yingx64a","objectKey":null,"sourceIPAddress":"1.2.3.4","awsRegion":"us-east-1","userType":"AssumedRole","userName":null,"principalId":"AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40","accessKeyId":"ASIA5FLZVX4OPVKKVBMX","userAgent":"[aws-cli\/1.18.136 Python\/3.8.5 Darwin\/19.5.0 botocore\/1.17.59]"}
+{"timestamp":"2020-09-14T01:02:34.000Z","eventName":"GetObject","bucketName":"mordors3stack-s3bucket-llp2yingx64a","objectKey":"ring.txt","sourceIPAddress":"1.2.3.4","awsRegion":"us-east-1","userType":"AssumedRole","userName":null,"principalId":"AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40","accessKeyId":"ASIA5FLZVX4OPVKKVBMX","userAgent":"[aws-cli\/1.18.136 Python\/3.8.5 Darwin\/19.5.0 botocore\/1.17.59]"}
+```
+
+These enriched logs make it possible to follow the attacker’s steps in an almost narrative form, showing exactly how the S3 bucket was accessed and what data was taken.
+---
+
+## ✅ Summary of Step 4
+
+After the enrichment step:
+
+- The dataset is fully **flattened and standardized**
+- S3 activity can be easily sorted by time, IP, bucket, or access key
+- Reconnaissance (`ListObjects`) and exfiltration (`GetObject`) patterns are clearly visible
+- The investigation now has a clean foundation for **timeline reconstruction** and **incident reporting**
+
+The next step is to begin analyzing the enriched dataset to build the full narrative of the attack.
+
+
+
 
