@@ -49,7 +49,7 @@ project-root/
 │
 ├── Docs/
 │   ├── walkthrough.md                # Full analysis walkthrough with screenshots
-│   └── attack_diagram.png            # Architecture diagram of the attack flow
+│               
 │
 ├── report/
 │   ├── ir_data_exfiltration.md       # SOC-style incident report (IRP–DataAccess)
