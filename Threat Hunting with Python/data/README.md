@@ -1,4 +1,4 @@
-## 📁 Data Directory
+# 📁 Data Directory
 
 This directory contains all datasets generated throughout the project, including the original CloudTrail logs, filtered S3-related subsets, enriched/flattened datasets, and extended IoC pivot searches.
 
