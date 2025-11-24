@@ -387,7 +387,7 @@ Name: count, dtype: int64
 This gives me a strong initial indication that the attacker enumerated buckets, enumerated objects, and then downloaded objects, behavior fully consistent with S3 exfiltration.
 
 ## Step 3.2 Event Classification
-In this step, I classify the S3 events into two separate DataFrames: one for `management events` and one for `data-access events`. Management events deal with high-level resource enumeration, while data-access events represent direct interaction with bucket contents. After classifying the events, I export each category to a CSV file for further analysis.
+In this step, I classify the S3 events into two separate DataFrames: one for `management events` and one for `data-access events`. Management events deal with high-level resource enumeration, while data-access events represent direct interaction with bucket contents. After classifying the events, I export each category to a CSV/JSONL file for further analysis.
 
 ### Creating Files and Variables
 I first defined the paths for the CSV files that will store the results:
@@ -430,7 +430,7 @@ def split_s3_categories(s3_df: pd.DataFrame):
 
 ### Exploring Results
 
-Finally, in the main block of the script, I used this classification function, printed the counts for each category, and exported all three DataFrames to CSV files inside the data/ directory:
+Finally, in the main block of the script, I used this classification function, printed the counts for each category, and exported all three DataFrames to CSV/JSONL files inside the data/ directory:
 
 ```python
 if __name__ == "__main__":
