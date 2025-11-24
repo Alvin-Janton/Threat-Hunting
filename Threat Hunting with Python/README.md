@@ -22,26 +22,45 @@ In this project I showcase how to:
 ```graphql
 project-root/
 │
-├── README.md                  # Project overview (this file)
+├── README.md                     # High-level project overview
 │
 ├── data/
-│   ├── raw/                   # Original CloudTrail JSON Lines dataset
-│   └── processed/             # Cleaned/filtered outputs (CSV, graphs, etc.)
+│   ├── ec2_proxy_s3_exfiltration/    # Original CloudTrail JSON Lines dataset (unmodified)
+│   │   └── ec2_proxy_s3_exfiltration_2020-09-14011940.json
+│   │
+│   ├── raw_data/                     # Quick previews + structural summaries
+│   │   ├── raw_preview.json          # First N raw events (pretty-printed)
+│   │   └── df_preview.md             # df.head(), df.info(), df.columns overview
+│   │
+│   ├── s3_events/                    # Filtered S3-only subsets
+│   │   ├── s3_all_events.jsonl
+│   │   ├── s3_management_events.jsonl
+│   │   └── s3_data_events.jsonl
+│   │
+│   ├── cleaned_data/                 # Cleaned/enriched S3 activity
+│   │   ├── s3_enriched_events.jsonl  # Primary enriched dataset (JSONL)
+│   │   └── s3_enriched_events.csv    # Legacy CSV export (kept for convenience)
+│   │
+│   └── exteneded_search/             # Extended IoC pivot searches (JSONL only)
+│       ├── search_principalId.jsonl
+│       ├── search_accessKeyId.jsonl
+│       ├── search_userAgent.jsonl
+│       └── extended_search_combined.jsonl
 │
 ├── Docs/
-│   └── walkthrough.md         # Full detailed walkthrough with screenshots
+│   ├── walkthrough.md                # Full analysis walkthrough with screenshots
+│   └── attack_diagram.png            # Architecture diagram of the attack flow
 │
 ├── report/
-│   ├── findings.md            # SOC-style incident summary and conclusions
-│   └── screenshots/           # Visuals referenced in documentation
+│   ├── ir_data_exfiltration.md       # SOC-style incident report (IRP–DataAccess)
+│   └── images/                       # Visuals referenced in the incident report
 │
 └── src/
-    ├── parse_json.py          # JSON loading and normalization
-    ├── clean_cloudtrail.py    # Cleaning and preprocessing
-    ├── extract_s3_events.py   # Filtering S3-related activity
-    └── visualize.py           # Graphs and timeline visualizations
+    ├── parse.py                      # Dataset preview + structure export
+    ├── filter_s3_events.py           # Filtering + categorizing S3 activity
+    ├── enrich_s3_events.py           # Flattening/enriching S3 CloudTrail events
+    └── extended_search.py            # Indicator pivoting across full dataset
 ```
-
 ---
 
 ## 🧰 Tools & Technologies
