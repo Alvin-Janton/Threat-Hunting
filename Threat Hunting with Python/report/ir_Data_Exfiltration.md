@@ -26,7 +26,7 @@ Using the EC2 instance’s instance profile role, the attacker:
 (principalId: `AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40`)
 - Enumerated S3 buckets and objects
 (`ListBuckets`, `ListObjects`)
-- Exfiltrated the object ring.txt using GetObject
+- Exfiltrated the object `ring.txt` using GetObject
 
 All S3 activity was signed using the same compromised access key:
 `ASIA5FLZVX4OPVKKVBMX`
