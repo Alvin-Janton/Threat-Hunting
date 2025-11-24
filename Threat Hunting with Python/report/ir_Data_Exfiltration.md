@@ -33,6 +33,13 @@ All S3 activity was signed using the same compromised access key:
 
 ---
 
+## Incident Visual
+
+Visual showing how the attack flow through the AWS Environment
+![Picture](./images/Exfiltration_Diagram.png)
+
+---
+
 ## Indicators of Compromise (IoCs)
 
 | Indicator Type           | Value                                                            | Confidence                           | Source     |
