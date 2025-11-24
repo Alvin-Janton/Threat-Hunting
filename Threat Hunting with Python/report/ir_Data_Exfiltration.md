@@ -26,7 +26,7 @@ Using the EC2 instance’s instance profile role, the attacker:
 (principalId: `AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40`)
 - Enumerated S3 buckets and objects
 (`ListBuckets`, `ListObjects`)
-- Exfiltrated the object ring.txt using GetObject
+- Exfiltrated the object `ring.txt` using GetObject
 
 All S3 activity was signed using the same compromised access key:
 `ASIA5FLZVX4OPVKKVBMX`
@@ -47,7 +47,7 @@ Visual showing how the attack flow through the AWS Environment
 | **Principal ID**         | `AROA5FLZVX4OAMSW6BCRH:i-0317f6c6b66ae9c40`                      | High                                 | CloudTrail |
 | **Temporary Access Key** | `ASIA5FLZVX4OPVKKVBMX`                                           | High                                 | CloudTrail |
 | **User Agent**           | `[aws-cli/1.18.136 Python/3.8.5 Darwin/19.5.0 botocore/1.17.59]` | High                                 | CloudTrail |
-| **Source IP**            | `1.2.3.4`                                                        | Medium (EC2 proxy hides true origin) | CloudTrail |
+| **Source IP**            | `1.2.3.4`                                                        | Low (EC2 proxy hides true origin) | CloudTrail |
 | **Object Exfiltrated**   | `s3://mordors3stack-s3bucket-llp2yingx64a/ring.txt`              | High                                 | CloudTrail |
 | **MFA Status**           | `mfaAuthenticated: false`                                        | High                                 | CloudTrail |
 
