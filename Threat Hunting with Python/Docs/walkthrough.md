@@ -13,7 +13,7 @@ I selected the **IRP-DataAccess** playbook from the AWS Incident Response Playbo
 You can view it here:  
 ➡️ https://github.com/aws-samples/aws-incident-response-playbooks/blob/master/playbooks/IRP-DataAccess.md
 
-This playbook focuses on responding to suspicious or unintended access to AWS data stores such as S3 — which aligns perfectly with the dataset being analyzed.
+This playbook focuses on responding to suspicious or unintended access to AWS data stores such as S3 , which aligns perfectly with the dataset being analyzed.
 
 ### 📂 Dataset Selection
 For this investigation, I am using the **AWS Cloud Bank Breach S3 dataset**, which simulates a real-world attack where an adversary obtains exposed credentials from a misconfigured EC2 instance and uses them to exfiltrate data from an S3 bucket.
@@ -263,9 +263,9 @@ def generate_markdown_summary(df, output_path):
 
 Using this helper function I exported three important data views:
 
-- `df.head()` — first 5 rows  
-- `df.info()` — dataset size, column types, null counts  
-- `df.columns` — the list of available fields
+- `df.head()` , first 5 rows  
+- `df.info()` , dataset size, column types, null counts  
+- `df.columns` , the list of available fields
 
 
 The resulting file includes:
@@ -749,7 +749,7 @@ This indicates:
 
 - The file **ring.txt** is likely the adversary’s target
 - Access was successful
-- The attacker returned for a second copy — possibly:
+- The attacker returned for a second copy, possibly:
   - verifying data integrity
   - testing persistence
   - confirming that the credentials still worked
@@ -881,4 +881,25 @@ It’s important to note that this conclusion is scoped to the provided dataset.
 With the investigation complete, the next step is to produce a formal incident report summarizing what happened, the attacker’s behavior, the potential impact, and recommended remediation actions.
 
 This will be covered in **Step 6: Incident Report**.
+
+---
+# 6. Conclusion
+
+This investigation followed the IRP–DataAccess workflow end-to-end, starting from raw CloudTrail logs and progressing through enrichment, indicator extraction, and IOC-based pivoting across the full dataset. By reconstructing the attacker’s activity with structured analysis rather than intuition alone, we were able to determine both **what happened** and **what did not** happen during the incident.
+
+The evidence shows a clear and consistent sequence of actions:
+
+- A compromised EC2 instance role (`MordorNginxStack-BankingWAFRole-9S3E0UAE1MM0`) was used to authenticate to AWS without MFA.
+- The attacker enumerated the victim’s S3 buckets using `ListBuckets`, then focused exclusively on `mordors3stack-s3bucket-llp2yingx64a`.
+- They repeatedly issued `ListObjects` requests to understand the bucket’s contents and permissions.
+- They performed two successful `GetObject` operations to retrieve **ring.txt**, which appears to be the target of the exfiltration.
+- No IAM changes, privilege escalation attempts, or activity against EC2, STS, Lambda, DynamoDB, or any other AWS service were observed.
+- Extended IOC-based searching confirmed that the attacker’s `principalId`, `accessKeyId`, and `userAgent` never appeared outside of S3 activity within this dataset.
+
+In other words, the logs support a **single-vector, single-asset compromise**. The attacker obtained access to an EC2 role’s temporary credentials, used those credentials to enumerate and exfiltrate data from one S3 bucket, and did not perform lateral movement or expand their foothold beyond this initial access.
+
+While the scope of the attack was limited in this dataset, the root cause, an EC2 instance profile with broad S3 permissions and no defense-in-depth protections such as MFA enforcement, GuardDuty coverage, or IAM least-privilege, highlights the importance of strengthening cloud access controls to reduce blast radius. 
+
+**The final takeaway is clear:**  
+The attacker succeeded not because of sophistication, but because the environment trusted an EC2 role too much and monitored it too little.
 
