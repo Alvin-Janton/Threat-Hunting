@@ -1,8 +1,8 @@
-                     ┌────────────────────────┐
+                     ┌─────────────────────────┐
                      │   Compromised EC2 VM    │
                      │  Instance Profile Role  │
                      │  (AssumedRole, no MFA)  │
-                     └───────────┬────────────┘
+                     └───────────┬─────────────┘
                                  │
                                  │ Uses temporary credentials
                                  ▼
@@ -17,29 +17,29 @@
                                 │ accessKeyId:
                                 │   ASIA5FLZVX4OPVKKVBMX
                                 ▼
-             ┌────────────────────────────────────────┐
+             ┌─────────────────────────────────────────┐
              │            S3 Enumeration               │
              │  eventName = ListBuckets (x2)           │
              │  eventName = ListObjects (multiple)     │
-             └───────────────────┬────────────────────┘
+             └───────────────────┬─────────────────────┘
                                  │
                                  │ Identifies bucket:
                                  │   mordors3stack-s3bucket-llp2yingx64a
                                  ▼
-       ┌──────────────────────────────────────────────────────┐
+       ┌───────────────────────────────────────────────────────┐
        │                Targeted Bucket Access                 │
        │   Repeated ListObjects calls → probing contents       │
        │   MFAAuthenticated = false                            │
        │   userAgent = AWS CLI on macOS                        │
-       └─────────────────────────┬────────────────────────────┘
+       └─────────────────────────┬─────────────────────────────┘
                                  │
                                  │ Finds object: ring.txt
                                  ▼
-              ┌────────────────────────────────────────┐
+              ┌─────────────────────────────────────────┐
               │             Data Exfiltration           │
               │       eventName = GetObject (x2)        │
               │    Object: ring.txt                     │
-              │    bytesTransferredOut = 89 bytes        │
+              │    bytesTransferredOut = 89 bytes       │
               └────────────────────────┬────────────────┘
                                        │
                                        │ No further activity:
