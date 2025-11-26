@@ -86,6 +86,8 @@ I also assigned each file a unique sourcetype to make the investigation easier:
 
 ![picture](../report/images/Ingesting%20Network%20Log%20.png)
 
+---
+
 ![picture](../report/images/Ingesting%20IoC%20Log.png)
 
 Once the upload finished, I verified ingestion using a simple search in the **Splunk Search & Reporting** app.
