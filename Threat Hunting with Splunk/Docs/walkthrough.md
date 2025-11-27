@@ -306,4 +306,97 @@ These findings validate that compromised hosts within the simulated network reac
 
 # Step 5: Dashboard Creation
 
+Now that I have identified all malicious IP activity in the network logs, the final step is to create a Splunk dashboard that visualizes these findings. The dashboard will display all events where internal systems communicated with known SolarWinds-related malicious IP addresses.
+
+This allows an analyst to continuously monitor for any new matches that may appear over time.
+
+---
+
+## Step 5.1: Preparing the Search Query
+
+The dashboard panel will use the same SPL query from Step 3.4, which correlates network traffic against the IOC lookup table.
+
+```sql
+index="threat_hunting" source="NetworkProxyLog02.csv"
+| lookup solarwinds_ioc_ips ip AS "IP Address" OUTPUT Note
+| where isnotnull(Note)
+| table Date Time "Computer Name" "IP Address" Note
+```
+
+Before adding this query to a dashboard, I verify that it returns the correct results inside the **Search & Reporting** app. After confirming that the output includes all five matched events, I can begin building the dashboard.
+
+---
+
+## Step 5.2: Creating the Dashboard
+
+To build the dashboard:
+
+1. From the Splunk navigation bar, click **Search & Reporting**.
+2. In the upper-right corner, click **Dashboards**.
+3. Click **Create New Dashboard**.
+4. Fill in the following fields:
+   - **Title:** `Solarwinds_IoC_Dashboard`
+   - **Description:** `SolarWinds IOC Monitoring Dashboard`
+   - **Dashboard Type** `Classic`
+   - **Permissions:** Private or Shared (depending on your preference)
+5. Click **Create Dashboard**.
+
+Splunk will open an empty dashboard canvas where you can add visual panels.
+
+---
+
+## Step 5.3: Adding a Panel for IOC Matches
+
+To add the panel that displays the matched IOCs:
+
+1. Click **Add Panel**
+2. Select **New from Search**
+3. Under New select **Events**
+4. In the search bar, paste the SPL query from **Step 5.1**
+5. Set the **Time Range** to **Last 24 Hours**
+
+> **Note:** Although the dataset does not include live data, setting the time window to 24 hours simulates how this dashboard would operate in a real SOC environment.
+
+5. Click **Add to Dashboard**
+6. Once the results appear, click **Save to Dashboard**
+7. Customize the panel title:
+   - **Title:** `SolarWinds IOC Matches (Last 24h)`
+
+After saving, the panel will appear in your dashboard.
+
+---
+
+## Step 5.4: Adjusting Visualization (Optional)
+
+Depending on preference, you may choose to visualize the results as:
+
+- A simple **statistics table** (recommended)
+- A **line chart** of IOC activity over time
+- A **pie chart** of how many times each IP appeared
+- A **single-value indicator** showing number of matches
+
+For this project, a **table** is the most appropriate and accurate representation.
+
+---
+
+## Step 5.5: Final Dashboard Output
+
+Your completed dashboard should contain a panel listing all events where the internal network contacted a known SolarWinds malicious IP address. It will look similar to the screenshot below:
+
+![picture](../report/images/IOC%20Dashboard.png)
+
+---
+
+This dashboard now serves as a monitoring tool that an analyst can use to track future network communication with SolarWinds-related IoCs.
+
+---
+
+# Step 6: Conclusion
+
+Throughout this investigation, I examined simulated network activity to identify potential indicators of compromise associated with the SolarWinds supply-chain attack. After ingesting the network logs and SolarWinds IOC data into Splunk, I verified that the datasets were parsed correctly and then isolated the malicious IP addresses from the threat feed. By converting these IPs into a lookup table and correlating them against outbound network traffic, I successfully identified three unique SolarWinds-related malicious IP addresses appearing a total of five times across multiple internal systems.
+
+These matches suggest that several hosts within the simulated environment communicated with attacker-controlled command-and-control (C2) or malware-repository infrastructure. Each match included clear metadata such as the date, time, and computer name, allowing for precise attribution during analysis. To support continuous monitoring, I also created a Splunk dashboard panel that displays all IOC matches within the last 24 hours. While the underlying dataset is static, the dashboard demonstrates how a real SOC analyst would monitor for ongoing compromise activity using Splunk.
+
+This project demonstrates the full lifecycle of a threat-hunting workflow: ingesting data, validating fields, extracting relevant intelligence, performing correlation at scale, and presenting actionable insights. By combining threat intelligence with Splunk’s searching and dashboarding capabilities, I was able to quickly uncover activity consistent with a sophisticated supply-chain compromise.
+
 
