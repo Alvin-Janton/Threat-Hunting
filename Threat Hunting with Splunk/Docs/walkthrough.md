@@ -255,3 +255,55 @@ Running the query reveals five matching events, corresponding to three unique ma
 ---
 
 # Step 4: Analysis
+
+With the lookup table in place, I used it to identify all malicious outbound connections in the network proxy logs. The results revealed **three unique SolarWinds-related IP addresses**, matching the intelligence feed and confirming that several hosts in the network communicated with known malicious infrastructure.
+
+Below is a breakdown of each matched IP, including the date, time, and computer name associated with the events.
+
+---
+
+## 🔍 Match #1 — 5.252.177.25
+**Threat Type:** C2 malware/callhome
+
+This IP appeared **three times** in the network logs, indicating repeated communication attempts to a known command-and-control (C2) server. The affected systems and timestamps are:
+
+- **2024-03-05 07:11:28 — LN-SolarStrike-14**
+- **2024-03-03 07:37:28 — MX-SolarStorm-136**
+- **2024-03-03 07:04:28 — WS-SolarLight-943**
+
+---
+
+## 🔍 Match #2 — **13.59.205.66**
+**Threat Type:** C2 malware/repository
+
+This IP appears **once** in the logs and is associated with malware retrieval or staging.  
+This suggests the host contacted a malicious repository server.
+
+- **2024-03-04 06:57:28 — WS-SolarWave-212**
+
+---
+
+## 🔍 Match #3 — **54.215.192.52**
+**Threat Type:** C2 malware/repository
+
+This IP also appears **once** and is linked to known SolarWinds attacker infrastructure.
+
+- **2024-03-05 07:10:28 — LN-SolarShadow-552**
+
+---
+
+## 📘 Summary of IOC Findings
+
+Across all network activity, I identified:
+
+- **3 unique malicious SolarWinds IP addresses**
+- **5 total events** associated with those IPs
+- **5 different internal systems** that communicated with malicious infrastructure
+
+These findings validate that compromised hosts within the simulated network reached out to attacker-controlled servers, consistent with SolarWinds-style supply chain compromise behavior.
+
+---
+
+# Step 5: Dashboard Creation
+
+
