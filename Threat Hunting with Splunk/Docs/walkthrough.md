@@ -82,7 +82,7 @@ For this project, I created a dedicated index called **threat_hunting** to store
 I also assigned each file a unique sourcetype to make the investigation easier:
 
 - `network_proxy` → *NetworkProxyLog02.csv*
-- `solarwinds_ioc` → *SolarWindsIOCs.csv*
+- `SolarWindsIOC` → *SolarWindsIOCs.csv*
 
 ![picture](../report/images/Ingesting%20Network%20Log%20.png)
 
@@ -108,7 +108,49 @@ Since the network log contains roughly **1,000 records** and the SolarWinds IOC 
 
 ---
 
+## Step 2: Dataset Exploration
 
+After ingesting both datasets into Splunk, the next step is to verify that Splunk parsed the data correctly—especially the **Date**, **Time**, and **IP Address** fields in the network logs. These fields are essential for determining the *who*, *what*, and *when* behind the activity we are investigating.
 
+---
 
+## Step 2.1: Verifying Ingestion
 
+To verify that Splunk correctly ingested and parsed both files, I ran two simple searches to view the first five events from each dataset.
+
+---
+
+### 🔍 Network Log Preview (`NetworkProxyLog02.csv`)
+
+```sql
+index="threat_hunting" host="network_proxy" | head 5
+```
+
+This query returns the first five events from the network proxy log, sorted by Splunk’s default ordering (based on the internal timestamp field `_time`).
+
+![pictute](../report/images/First%20Five%20Lines%20Network.png)
+
+> **Note:** Splunk automatically orders results by the internal `_time` field, **not** by the original line order of the CSV.  
+> Because `_time` defaults to the moment the file was ingested, `head` returns the first five **ingested** events—not the first five rows from the raw file.  
+> This is normal behavior and does not affect the investigation.
+
+---
+
+### 🔍 IOC Log Preview (`SolarWindsIOCs.csv`)
+
+For the IOC file, I used a similar query, but replaced `head` with `tail`.  
+This is because the IOC file does not include its own timestamp fields, so Splunk assigns `_time` based on ingestion time.  
+Splunk may display the file in **reverse order**, meaning the original first rows appear last.
+
+```sql
+index="threat_hunting" host="SolarWindsIOC" | tail 5
+```
+
+![picture](../report/images/First%20Five%20Lines%20IOC.png)
+
+---
+
+With these previews, I confirmed that Splunk successfully ingested both datasets and preserved all important fields, including the `Date`, `Time`, `Computer Name`, and `IP Address` columns in the network 
+logs.
+
+---
