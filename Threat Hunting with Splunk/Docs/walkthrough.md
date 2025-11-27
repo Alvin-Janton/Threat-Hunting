@@ -339,3 +339,5 @@ Running the query reveals five matching events, corresponding to three unique ma
 ![picture](../report/images/Lookup%20Result.png)
 
 ---
+
+# Step 4: Analysis
