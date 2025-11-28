@@ -81,8 +81,8 @@ Splunk typically detects CSV files automatically, but the **Source Type** field 
 For this project, I created a dedicated index called **threat_hunting** to store both datasets.  
 I also assigned each file a unique sourcetype to make the investigation easier:
 
-- `network_proxy` → *NetworkProxyLog02.csv*
-- `SolarWindsIOC` → *SolarWindsIOCs.csv*
+- `network_proxy` → **NetworkProxyLog02.csv**
+- `solarwinds_ioc` → **SolarWindsIOCs.csv**
 
 ![picture](../report/images/Ingesting%20Network%20Log%20.png)
 
@@ -130,8 +130,7 @@ This query returns the first five events from the network proxy log, sorted by S
 
 ![pictute](../report/images/First%20Five%20Lines%20Network.png)
 
-> **Note:** Splunk automatically orders results by the internal `_time` field, **not** by the original line order of the CSV.  
-> Because `_time` defaults to the moment the file was ingested, `head` returns the first five **ingested** events—not the first five rows from the raw file.  
+> **Note:** Splunk automatically orders results by the `date/time` fields, **not** by the original line order of the CSV.  
 > This is normal behavior and does not affect the investigation.
 
 ---
@@ -238,6 +237,7 @@ index="threat_hunting" source="NetworkProxyLog02.csv"
 | table Date Time "Computer Name" "IP Address" Note
 ```
 >Note: Set the **Time Range** to **All Time**, since the network logs were recorded in March 2024.
+
 This query works as follows:
 
 - Searches only the network proxy log
@@ -245,8 +245,6 @@ This query works as follows:
 - Adds the `Note` field from the lookup to matching events
 - Filters out all events that did not match
 - Displays the date, time, computer name, and malicious IP information
-
-> **Note:** Set the **Time Range** to **All Time**, since the network logs were recorded in March 2024.
 
 Running the query reveals five matching events, corresponding to three unique malicious IP addresses.
 
