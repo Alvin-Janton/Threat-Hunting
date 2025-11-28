@@ -273,7 +273,7 @@ This IP appeared **three times** in the network logs, indicating repeated commun
 
 ---
 
-## 🔍 Match #2 — **13.59.205.66**
+## 🔍 Match #2 — 13.59.205.66
 **Threat Type:** C2 malware/repository
 
 This IP appears **once** in the logs and is associated with malware retrieval or staging.  
@@ -283,7 +283,7 @@ This suggests the host contacted a malicious repository server.
 
 ---
 
-## 🔍 Match #3 — **54.215.192.52**
+## 🔍 Match #3 — 54.215.192.52
 **Threat Type:** C2 malware/repository
 
 This IP also appears **once** and is linked to known SolarWinds attacker infrastructure.
