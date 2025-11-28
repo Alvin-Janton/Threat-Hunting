@@ -102,5 +102,6 @@ This project follows a training-oriented, structured approach:
 ---
 
 ## 📄 Full Documentation
-📘 **Full Walkthrough:** [Docs/walkthrough.md](./Docs/walkthrough.md)
+📘 **Full Walkthrough:** [walkthrough.](./Docs/walkthrough.md)
+📘 **Incident Report:** [Incident Report](./report/ir_Data_Exfiltration.md)
 
