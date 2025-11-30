@@ -180,5 +180,23 @@ pkill catalyst
 
 ---
 
+# Step 2: Incident A SolarWindsIOC
+
+In this steo, I create an incident ticket for the SolarWinds IoCs that were found in the Splunk project.
+
+To do this, in Catalyst, click on `incidents` on the left-hand taskbar. Click `New Ticket` and fill in the information for the incident.
+
+- **Name**: SolarWinds IOC Compromise
+- **Description**: IP addresses found from the SolarWinds IOC threat feed
+- **Severity**: High
+
+Click save.
+
+You should now be shown the incident ticket you just created.
+
+![pictute](../report/images/Incident%20Ticket.png)
+
+---
+
 
 
