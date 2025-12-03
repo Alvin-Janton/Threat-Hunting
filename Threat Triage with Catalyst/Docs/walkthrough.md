@@ -1,182 +1,238 @@
 # 📝 Preliminary Information
 
-Before starting this project, I installed Catalyst on my local machine and created an administrator account.  
-This allows me to generate incidents, add observables, run enrichments, and document the full investigation workflow.
+Before beginning this project, I installed the Docker Engine (Docker + Docker Compose), executed a custom installation script to launch the required containers, and accessed Catalyst to begin generating incidents, adding observables, running enrichments, and documenting the full investigation workflow.
 
 ---
 
 ## 🌐 Environment
 
-This project is conducted inside **Catalyst**, a free and open-source incident response platform designed to support SOC workflows.  
-Catalyst enables analysts to:
+This project is conducted inside **Catalyst**, a free and open-source incident response platform built to support SOC and DFIR workflows. Catalyst enables analysts to:
 
-- Create and manage incidents  
-- Attach observables and run enrichments  
-- Build evidence-based timelines  
-- Document analysis and export reports  
+- Create and manage incident records  
+- Add observables (IoCs) and run automated enrichments  
+- Build detailed evidence timelines  
+- Write notes and document analytical decisions  
+- Export reports for stakeholders  
 
-All steps of the investigation are performed within a centralized interface.
+All steps of both investigations were performed within this unified interface.
 
 ---
 
 ## 📂 Data Sources
 
-All indicators and investigative details used in this project come from two prior threat-hunting investigations:
+All indicators and investigative details used in this project originate from two prior threat-hunting investigations I completed:
 
-- **Threat Hunting with Splunk** (SolarWinds IOC Correlation)  
-- **Threat Hunting with Python** (AWS CloudTrail Exfiltration Case)
+- **Threat Hunting with Splunk — SolarWinds IOC correlation**  
+- **Threat Hunting with Python — AWS CloudTrail exfiltration case**
 
-These projects supplied the IoCs and artifacts used to build each Catalyst incident, including:
+These projects supplied the IoCs and supporting artifacts used to construct each Catalyst incident, including:
 
 - Malicious IP addresses  
-- Principal ID / temporary access key metadata  
+- Principal ID and temporary access-key metadata  
 - Attacker user-agent strings  
-- S3 object paths  
-- Additional identifiers supporting correlation  
+- S3 object paths associated with exfiltration  
+- Additional identifiers required for correlation and enrichment  
 
 ---
 
 ## 🧭 If You Want to Follow Along
 
-If you're new to Catalyst or incident-response tooling, the following documentation will help with installation and basic features:
+If you're new to Catalyst, Docker, or incident-response platforms, the following resources will help you get started:
 
 ### 📘 Catalyst Handbook  
-Covers installation, configuration, incident creation, observables, and enrichments.  
-- ➡️ https://catalyst.security-brewery.com/docs/category/catalyst-handbook
+Installation, configuration, incident creation, observables, enrichment, and UI usage.  
+➡️ https://catalyst.security-brewery.com/docs/category/catalyst-handbook
 
 ### 💻 Catalyst GitHub Repository  
-Source code, releases, templates, and examples.  
-- ➡️ https://github.com/SecurityBrewery/catalyst
+Source code, releases, templates, and deployment examples.  
+➡️ https://github.com/SecurityBrewery/catalyst
+
+### 🐳 Docker Installation Guide  
+Official instructions for installing the Docker Engine.  
+➡️ https://docs.docker.com/engine/install/
+
+### 🎥 Beginner-Friendly Docker Tutorial (Video)  
+A visual introduction to containers and Docker workflow.  
+➡️ https://youtu.be/DQdB7wFEygo?si=V91KY5BbZPgvF7p3
+
+---
+
+## 🖥️ About Operating Systems (Important Note for Readers)
+
+This walkthrough is written with a **Linux/Ubuntu environment** in mind.  
+The full incident-response version of Catalyst (the version used in this project) runs as a **multi-container Docker stack**, and its deployment scripts are written in **Bash**, which makes Linux the most compatible operating system.
+
+If you're running a different OS, here are your options:
+
+---
+
+## 🪟 Windows Users (Recommended: WSL2 + Docker Desktop)
+
+To follow along on Windows, you can replicate the same environment by:
+
+1. Enabling **WSL2 (Windows Subsystem for Linux)**
+  - Installing **Ubuntu** from the Microsoft Store  
+  - This gives you a Linux shell capable of running Bash scripts*
+2. Installing **Docker Desktop for Windows**
+  - Make sure **“Use Docker with WSL2”** is enabled  
+  - Docker Desktop will handle container runtime integration automatically
+3. Running the Catalyst deployment script **inside Ubuntu/WSL2**
+  - Place your `docker-compose.yml` and config files inside the Ubuntu filesystem  
+  - Run your Bash script exactly as you would on a native Linux machine
+4. Launch an Ubuntu/Linux Virtual Machine
+  - You can follow along without issue
+
+---
+
+## 🍎 macOS Users
+
+macOS users can follow along natively by:
+
+- Installing **Docker Desktop for Mac**
+- Running the Bash installer script directly in **Terminal**  
+  *(macOS supports Bash and zsh natively)*
+
+The multi-container Catalyst stack works **identically** on macOS.
+
+---
+
+## 🖥️ Other Linux Distributions
+
+Any major Linux distribution (Ubuntu, Debian, Fedora, Kali, Arch, etc.) can run this project as long as:
+
+- **Docker Engine** is installed  
+- **Docker Compose** is available  
+- The filesystem supports the file paths in your script
 
 ---
 
 # Step 1: Setup
 
-To begin this project, I installed Catalyst on my local machine and created an administrator user.  
-This allows me to create incidents, add observables, run enrichments, and document investigations within the platform.
+To begin this project, I installed the Docker Engine on my local machine, and ran the setup script to start the Catalyst application.
+
+>Note: The following setup instructions are written for **Ubuntu** systems.
+If you are using a different operating system, refer to the **About Operating Systems** section in Preliminary Information.
 
 ---
 
-## 🔧 Installing Catalyst
+## 🔧 Installing Docker
 
-Download Catalyst from the official GitHub releases page:
+To download Docker, open the terminal and run the commands below:
+>Note: If you already have Docker installed, go to the **Executing Installation Script** section
 
-➡️ https://github.com/SecurityBrewery/catalyst/releases
+### Update the package index
+```bash
+sudo apt-get update
+```
+>This command updated the package index
 
-Select the ZIP archive for your operating system.
+### Install required packages
+```bash
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+```
 
-![pciture](../report/images/Catalyst%20Zip%20Folders.png)
+### Add Docker’s official GPG key
+```bash
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+```
 
----
+### Add the Docker apt repository
+```bash
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+```
 
-Select the ZIP archive for your operating system.
+### Install Docker Engine + CLI + containerd
+```bash
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
 
-After downloading, unzip the folder and navigate into the directory that contains the Catalyst executable.
+### Allow running docker without sudo
+```bash
+sudo usermod -aG docker $USER
+```
+>Note: Create a new terminal session for this command to take effect
 
-Your working directory should look similar to the following:
+### Verfiy Successful Installation
+```bash
+docker --version
+docker compose version
+```
+
+If you're successful, you should see something like this in the terminal
 
 ```bash
-C:\Users\alvin\downloads\catalyst_Windows_x86_64
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
-d-----        11/29/2025  11:39 AM                catalyst_data
--a----        11/29/2025  11:22 AM       19854848 catalyst.exe
--a----        11/29/2025  11:22 AM          34336 LICENSE
--a----        11/29/2025  11:22 AM           3099 README.md
+ubuntu@ip-172-31-71-103:~$ docker --version
+Docker version 29.1.2, build 890dcca
+ubuntu@ip-172-31-71-103:~$ docker compose version
+Docker Compose version v5.0.0
+ubuntu@ip-172-31-71-103:~$
 ```
-
-> **Note:** The binary name may vary depending on your OS (e.g., `.exe` for Windows, no extension for Linux/Mac).
 
 ---
 
-## Creating an Admin
+## Executing Installation Script
 
-To create an administrator user in Catalyst, run the appropriate command for your OS.
+Once you've installed Docker, go to the [Scripts](../Scripts) folder and download the `setup_catalyst.sh` in the directory that you want this project to live.
+>Note: You're free to look over and change the script as you please to fit your needs.
 
+### Grant Execute Permissions
 ```bash
-.\catalyst.exe admin create ExampleUser@gmail.com password123 # Windows
-
-./catalyst admin create ExampleUser@gmail.com password123     # Linux/Mac
+chmod 700 <Your scripts name>
 ```
->Note: Replace the example username and password with real credentials, and make sure you run the command from the Catalyst directory  
-(unless you’ve added Catalyst to your system PATH).
+>This grants execute permissions to the owner of the script.
 
-If successful, you will be able to log in after launching Catalyst.
-
----
-
-## 🚀 Launching Catalyst
-
-Start Catalyst using the `serve` command:
-
+### Execute It
 ```bash
-.\catalyst.exe serve # Windows
-./catalyst serve     #Linux/Mac
+./setup_catalyst.sh
 ```
+>Note: Answer yes(y) to prompts when asked.
 
+If successful, you should begin to see output in your terminal showing:
+- Secrets being generated
+- Configuration files being created
+- Docker containers being pulled
+- Catalyst services starting successfully
+
+[Picture](../report/images/Script%20Output.png)
 ---
-You should see something similar in your terminal:
 
-```bash
-PS C:\Users\alvin\downloads\catalyst_Windows_x86_64> .\catalyst serve
-2025/11/29 14:40:08 INFO Connecting to database path=catalyst_data\data.db
-2025/11/29 14:40:08 INFO Current database version version=5
-2025/11/29 14:40:08 INFO No migrations to apply
-2025/11/29 14:40:08 INFO Starting Catalyst server address=:8090
+## Accessing Catalyst
+
+To access Catalyst, in your browser, paste the Catalyst URL that you got from the script.
+
+```text
+ https://catalyst.localhost
 ```
->Note: To stop Catalyst, just enter ctrl+C
----
+>Note: Your browser will warn that the site is “unsafe” because it uses self-signed certificates.
+This is expected in a local lab environment, proceed anyway.
 
-Access Catalyst in your browser at:
+You should be met with the Catalyst home page telling you to login with OIDC. Click the button to be taken to the authentication page.
 
-```arduino
-http://localhost:8090
-```
+[Picture](../report/images/Catalyst%20Login%20Page.png)
 
 ---
+### Login Credentials
+Use the default credentials:
+- **Username**: `admin`
+- **Password**: `admin`
 
-You should now see the login screen.  
-![picture](../report/images/Catalyst%20Login.png)
+Click **Accept** on the following page.
 
----
+If everything was done correctly, you should be met with the Catalyst dashboard.
 
-Enter your admin credentials.  
-If authentication succeeds, you will be taken to the Catalyst dashboard.
-![picture](../report/images/Catalyst%20Dashboard.png)
-
----
-
-Now, we can begin creating tickets and investigations.
+[picture](../report/images/Catalyst%20Dashboard2.png)
 
 ---
 
 ## Extra
 
-If you want to run Catalyst in the background without cluttering your terminal, use the appropriate commands for your OS.
-
-### Start Catalyst Silently in Powershell (Windows)
-```bash
-Start-Process powershell 
-  -WindowStyle Hidden 
-  -WorkingDirectory "Path to Catalyst"
-  -ArgumentList 'catalyst serve'
-```
-
-### Stop Catalyst Silently in Powershell (Windows)
-```bash
-Get-Process catalyst -ErrorAction SilentlyContinue | Stop-Process
-```
-
-### Start Catalyst Silently in Bash (Linux/Mac)
-```bash
-nohup bash -c "cd /path/to/catalyst && ./catalyst serve" > catalyst.log 2>&1 &
-```
-
-### Stop Catalyst Silently in Bash (Linux/Mac)
-```bash
-pkill catalyst
-```
+If you're having trouble authenticating, visit the [TroubleShooting](../Scripts/TroubleShooting.md) file for some help
 
 ---
 
