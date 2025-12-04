@@ -418,3 +418,59 @@ Finally, **close the incident**.
 
 ---
 
+# Conclusion
+
+Across both investigations, Catalyst served as a centralized platform for documenting indicators, validating threat intelligence, and organizing the findings into structured incidents. Although the incidents involved different datasets and attack vectors, both ultimately demonstrated the importance of early detection, external verification, and clear separation between malicious activity and compromised—but legitimate—assets.
+
+---
+
+## Incident A — SolarWinds IOC Investigation
+
+Incident A focused on SolarWinds-related network indicators discovered during the Splunk threat-hunting project. These IP addresses were matched against proxy logs and externally verified through VirusTotal and AbuseIPDB. The investigation confirmed that each IP possessed a malicious reputation, validating their relevance as true IoCs.
+
+This process illustrated the value of correlating internal log activity with known threat intelligence to surface potential compromises quickly.
+
+---
+
+## Incident B — S3 Data Exfiltration Investigation
+
+Incident B, derived from the Python-based CloudTrail investigation, revealed a different type of threat: **credential misuse leading to direct data exfiltration**.
+
+Key findings included:
+
+- A malicious User-Agent and external IP served as attacker identifiers  
+- The AWS **principal ID**, **temporary access key**, and **S3 object path** were legitimate resources that had been misused  
+- Catalyst’s binary artifact model required distinguishing between **malicious** and **compromised-but-clean** indicators  
+
+CloudTrail logs confirmed that stolen temporary credentials were used to retrieve sensitive S3 data—an example of how attacker activity can blend into normal operational behavior without proper visibility.
+
+---
+
+## Key Themes Across Both Investigations
+
+- **Threat intelligence alone is not enough:** External IoCs must be correlated with internal logs to determine whether they have operational relevance inside the environment.
+
+- **Credential misuse is a high-impact attack vector:** Even legitimate roles and temporary credentials can be abused unnoticed unless logs are actively monitored and analyzed.
+
+- **3. Proper classification of observables is essential:** Indicators must be categorized based on their `nature`, not merely their presence in an incident:
+
+- **4. Cross-tool investigations enhance accuracy**
+Splunk, Python-based log parsing, and Catalyst each contributed distinct layers of insight:
+
+- Splunk → IOC correlation & detection  
+- Python → actor behavior modeling & enrichment  
+- Catalyst → structured IR documentation  
+
+Together, they provided a comprehensive view of each threat.
+
+---
+
+## Final Assessment
+
+Both incidents reinforce the importance of:
+
+- Strong monitoring and telemetry  
+- Comprehensive auditing  
+- Structured and disciplined incident documentation  
+
+By leveraging Catalyst to organize and record findings, the full scope of each investigation becomes easy to visualize and communicate. This strengthens detection workflows and supports more effective response strategies for future cases.
