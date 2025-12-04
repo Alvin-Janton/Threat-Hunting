@@ -258,7 +258,7 @@ To begin:
 
 You should now see the incident overview page:
 
-![picture](../report/images/Incident%20Ticket.png)
+![picture](../report/images/Catalyst%20Incident(A).png)
 
 ---
 
@@ -322,7 +322,99 @@ Finally, **close the incident**.
 
 ---
 
-# Step 3: Incident B - S3 Data Exfiltration
+# Step 3: Incident B – S3 Data Exfiltration
 
+In this step, I create an incident in Catalyst and document the malicious actor and compromised assets identified during the **Threat Hunting with Python** project. These indicators originated from the `ec2_proxy_exfiltration` dataset and were identified during CloudTrail log analysis.
 
+---
+
+## Creating the Incident
+
+To begin:
+
+1. In the left-hand sidebar, select **Incidents**.  
+2. Click **New Incident**.  
+3. Fill in the following details:
+
+   - **Name:** S3 Data Exfiltration  
+   - **Description:** Compromised EC2 proxy server was used to exfiltrate data from an S3 bucket  
+   - **Severity:** High  
+
+4. Click **Save** to create the incident.
+
+You should now see the incident overview page:
+
+![picture](../report/images/Incident(B).png)
+
+---
+
+## Adding Artifacts (Observables)
+
+Open the **Artifacts** panel on the right side of the incident.
+
+For this investigation, we documented both **malicious indicators** and **legitimate AWS assets** that were compromised during the attack.
+
+---
+
+## Malicious IoCs
+
+These indicators represent attacker-controlled components or behavior observed in the logs.
+
+To add them:
+
+1. Click **Create Artifact**.  
+2. Enter the malicious **User-Agent string** (representing the attacker’s tooling).  
+3. Configure the artifact:
+
+   - **Status:** Malicious  
+   - **Kind:** IOC  
+   - **Fingerprint:** Use the `hash.sha1` generator button to create a unique hash  
+
+This User-Agent serves as the identifying characteristic of the attacker’s automation or custom script.
+
+---
+
+## Compromised IoCs
+
+These are legitimate AWS components that were **abused** but are **not inherently malicious**.  
+Because Catalyst only supports **Clean** or **Malicious**, these must be marked **Clean**, with additional context provided through logs or notes.
+
+For each compromised item — such as:
+
+- the temporary **access key**,  
+- the **principal ID**,  
+- the **S3 object path** associated with exfiltration:
+
+Follow these steps:
+
+1. Click **Create Artifact**.  
+2. Add the relevant value.  
+3. Assign the following:
+
+   - **Status:** Clean  
+   - **Kind:** IOC  
+   - **Hash:** Generate a SHA-1 fingerprint  
+   - **Log:** Add a short note explaining how the asset was misused  
+     - e.g., *“Access key used by external actor to retrieve S3 object.”*
+
+This ensures the distinction between **malicious infrastructure** and **legitimate-but-abused** cloud resources remains clear during analysis and reporting.
+
+![picture](../report/images/Compromised%20Assets.png)
+
+---
+
+## Documenting Findings & Closing the Incident
+
+Once all IoCs are added and verified, add a short written summary to the incident describing:
+
+- Where the IoCs originated (ec2_proxy_exfiltration)  
+- How they were matched (CloudTrail logs from Python Hunt)  
+- Their confirmed reputation from triage  
+- Any relevant notes or patterns
+
+Finally, **close the incident**.
+
+![pciture](../report/images/Incident(B)%20Closed.png)
+
+---
 
