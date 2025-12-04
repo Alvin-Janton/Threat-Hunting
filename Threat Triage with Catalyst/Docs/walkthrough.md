@@ -124,7 +124,6 @@ To download Docker, open the terminal and run the commands below:
 ```bash
 sudo apt-get update
 ```
->This command updated the package index
 
 ### Install required packages
 ```bash
