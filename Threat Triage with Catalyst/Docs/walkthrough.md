@@ -199,7 +199,7 @@ If successful, you should begin to see output in your terminal showing:
 - Docker containers being pulled
 - Catalyst services starting successfully
 
-[Picture](../report/images/Script%20Output.png)
+![Picture](../report/images/Script%20Output.png)
 ---
 
 ## Accessing Catalyst
@@ -214,7 +214,7 @@ This is expected in a local lab environment, proceed anyway.
 
 You should be met with the Catalyst home page telling you to login with OIDC. Click the button to be taken to the authentication page.
 
-[Picture](../report/images/Catalyst%20Login%20Page.png)
+![Picture](../report/images/Catalyst%20Login%20Page.png)
 
 ---
 ### Login Credentials
@@ -226,7 +226,7 @@ Click **Accept** on the following page.
 
 If everything was done correctly, you should be met with the Catalyst dashboard.
 
-[picture](../report/images/Catalyst%20Dashboard2.png)
+![picture](../report/images/Catalyst%20Dashboard2.png)
 
 ---
 
@@ -236,23 +236,93 @@ If you're having trouble authenticating, visit the [TroubleShooting](../Scripts/
 
 ---
 
-# Step 2: Incident A SolarWindsIOC
+# Step 2: Incident A — SolarWinds IOC Investigation
 
-In this steo, I create an incident ticket for the SolarWinds IoCs that were found in the Splunk project.
-
-To do this, in Catalyst, click on `incidents` on the left-hand taskbar. Click `New Ticket` and fill in the information for the incident.
-
-- **Name**: SolarWinds IOC Compromise
-- **Description**: IP addresses found from the SolarWinds IOC threat feed
-- **Severity**: High
-
-Click save.
-
-You should now be shown the incident ticket you just created.
-
-![pictute](../report/images/Incident%20Ticket.png)
+In this step, I create an incident in Catalyst and document the malicious IP addresses identified during the **Threat Hunting with Splunk** project. These IoCs originated from the SolarWinds-associated threat feed and were matched against the proxy logs during the hunt.
 
 ---
+
+## Creating the Incident
+
+To begin:
+
+1. In Catalyst, select **“Incidents”** from the left-hand sidebar.  
+2. Click **“New Incident.”**  
+3. Fill in the incident details:
+
+   - **Name:** SolarWinds IOC Compromise  
+   - **Description:** IP addresses identified from the SolarWinds IOC threat feed  
+   - **Severity:** High  
+
+4. Click **Save** to create the incident.
+
+You should now see the incident overview page:
+
+![picture](../report/images/Incident%20Ticket.png)
+
+---
+
+## Adding Artifacts (Observables)
+
+On the right-hand side of the incident page, open the **Artifacts** panel.
+
+For each suspicious IP address:
+
+1. Click **“Create Artifact.”**  
+2. Enter the IoC (e.g., the malicious IP address).  
+3. Assign the following properties:
+
+   - **Status:** Malicious  
+   - **Kind:** IOC  
+   - Use the button next to `hash.sha1` to automatically generate a fingerprint for the observable.
+
+![picture](../report/images/Artifact%20Creation.png)
+
+Repeat this process for each of the IP addresses associated with the SolarWinds IOC feed.
+
+---
+
+## Threat Triage & External Reputation Checks
+
+To validate the severity of each IP, I performed external reputation checks using **VirusTotal** and **AbuseIPDB**.
+
+### VirusTotal
+- Paste the IP address into the VirusTotal search bar.  
+- A high community score (typically **Greater than 4 or 5**) indicates that the IP is widely recognized as malicious.
+
+![picutre](../report/images/VirusTotal%20Result.png)
+
+### AbuseIPDB
+- Search the same IP on AbuseIPDB to confirm its reputation and previous abuse reports.
+
+![picutre](../report/images/AbuseIPDB%20Result.png)
+
+Performing these reputation checks helps distinguish between:
+
+- Truly malicious infrastructure  
+- Compromised systems temporarily abused  
+- Benign but suspicious-looking IoCs  
+
+This reduces false positives and helps assess the real threat level.
+
+---
+
+## Documenting Findings & Closing the Incident
+
+Once all IoCs are added and verified, add a short written summary to the incident describing:
+
+- Where the IoCs originated (SolarWinds threat feed)  
+- How they were matched (proxy log scans during Splunk hunt)  
+- Their confirmed reputation from triage  
+- Any relevant notes or patterns
+
+Finally, **close the incident**.
+
+![pciture](../report/images/Incident(A)%20Closed.png)
+
+---
+
+# Step 3: Incident B - S3 Data Exfiltration
 
 
 
