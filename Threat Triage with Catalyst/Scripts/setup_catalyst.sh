@@ -1,11 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 IFS=$'\n\t'
+FORCE=false
 
 echo "=== Catalyst IR Stack Installer ==="
 
 # ---------------------------
-# 0. Simple error trap
+# 0. Helper Functions
 # ---------------------------
 
 on_error() {
@@ -31,34 +32,52 @@ check_port_in_use() {
   fi
 }
 
+confirm_or_force() {
+  local prompt="$1"
+
+  if [[ "$FORCE" == "true" ]]; then
+    echo "[FORCE] $prompt -> proceeding"
+    return 0
+  fi
+
+  read -r -p "$prompt [y/N]: " ans
+  [[ "$ans" =~ ^[Yy]$ ]]
+}
+
 check_arango_volume() {
-    local ARANGO_VOL_NAME="catalyst-ir-stack_arangodb"  # change if needed
+  local ARANGO_VOL_NAME="catalyst-ir-stack_arangodb"  # change if needed
 
-    if docker volume inspect "$ARANGO_VOL_NAME" >/dev/null 2>&1; then
-        echo "-----------------------------------------------------------------------"
-        echo "[WARNING] Existing ArangoDB Docker volume detected: $ARANGO_VOL_NAME"
-        echo ""
-        echo "ArangoDB is already initialized and WILL IGNORE any new root password."
-        echo "If .env contains a different ARANGO_ROOT_PASSWORD than the one used"
-        echo "when this volume was first created, Catalyst will fail to authenticate."
-        echo ""
-        echo "Options:"
-        echo "  1) Delete the volume for a clean install:"
-        echo "         docker volume rm $ARANGO_VOL_NAME"
-        echo ""
-        echo "  2) Keep the existing volume but ensure .env uses the SAME password."
-        echo ""
-        echo -n "Do you want to continue using the existing ArangoDB volume? (yes/no): "
-        read -r ARANGO_CONTINUE
+  if docker volume inspect "$ARANGO_VOL_NAME" >/dev/null 2>&1; then
+    echo "-----------------------------------------------------------------------"
+    echo "[WARNING] Existing ArangoDB Docker volume detected: $ARANGO_VOL_NAME"
+    echo ""
+    echo "ArangoDB is already initialized and WILL IGNORE any new root password."
+    echo "If .env contains a different ARANGO_ROOT_PASSWORD than the one used"
+    echo "when this volume was first created, Catalyst will fail to authenticate."
+    echo ""
+    echo "Options:"
+    echo "  1) Delete the volume for a clean install:"
+    echo "         docker volume rm $ARANGO_VOL_NAME"
+    echo ""
+    echo "  2) Keep the existing volume but ensure .env uses the SAME password."
+    echo ""
 
-        if [[ "$ARANGO_CONTINUE" != "yes" ]]; then
-            echo "[ABORTED] Delete the volume or fix .env before rerunning the installer."
-            exit 1
-        fi
+    if [[ "$FORCE" == "true" ]]; then
+      echo "[FORCE] Proceeding with existing ArangoDB volume."
+    else
+      echo -n "Do you want to continue using the existing ArangoDB volume? (yes/no): "
+      read -r ARANGO_CONTINUE
 
-        echo "[INFO] Proceeding with existing ArangoDB volume."
-        echo "-----------------------------------------------------------------------"
+      if [[ "$ARANGO_CONTINUE" != "yes" ]]; then
+        echo "[ABORTED] Delete the volume or fix .env before rerunning the installer."
+        exit 1
+      fi
+
+      echo "[INFO] Proceeding with existing ArangoDB volume."
     fi
+
+    echo "-----------------------------------------------------------------------"
+  fi
 }
 
 ensure_hosts_entries() {
@@ -67,17 +86,14 @@ ensure_hosts_entries() {
 
   local missing_hosts=()
 
-  # Check Catalyst host
   if [ -n "$CATALYST_HOST" ] && ! grep -q "$CATALYST_HOST" /etc/hosts 2>/dev/null; then
     missing_hosts+=("$CATALYST_HOST")
   fi
 
-  # Check Authelia host
   if [ -n "$AUTHELIA_DOMAIN" ] && ! grep -q "$AUTHELIA_DOMAIN" /etc/hosts 2>/dev/null; then
     missing_hosts+=("$AUTHELIA_DOMAIN")
   fi
 
-  # Nothing missing → no prompt
   if [ "${#missing_hosts[@]}" -eq 0 ]; then
     echo "[OK] /etc/hosts already contains entries for:"
     [ -n "$CATALYST_HOST" ] && echo "     - $CATALYST_HOST"
@@ -85,24 +101,39 @@ ensure_hosts_entries() {
     return 0
   fi
 
-  # Something is missing → show warning + prompt once
   echo "[WARN] /etc/hosts is missing entries for:"
   for h in "${missing_hosts[@]}"; do
     echo "       - $h"
   done
 
   echo
-  read -r -p "[PROMPT] Add 127.0.0.1 entries for these hostnames to /etc/hosts? (y/n): " ans
-if [[ ! "$ans" =~ ^[Yy]$ ]]; then
-  echo "[SKIP] Not modifying /etc/hosts. You'll need to add these entries manually."
-  return 0
-fi
+  if [[ "$FORCE" == "true" ]]; then
+    if [[ "$EUID" -ne 0 ]]; then
+      echo "[WARN] --force enabled but not running as root. Skipping /etc/hosts modification."
+      return 0
+    fi
+    echo "[FORCE] Running as root. Updating /etc/hosts without prompt."
+  else
+    read -r -p "[PROMPT] Add 127.0.0.1 entries for these hostnames to /etc/hosts? (y/n): " ans
+    if [[ ! "$ans" =~ ^[Yy]$ ]]; then
+      echo "[SKIP] Not modifying /etc/hosts. You'll need to add these entries manually."
+      return 0
+    fi
+  fi
 
-  # Append missing entries
   for h in "${missing_hosts[@]}"; do
-    echo "127.0.0.1 $h" | sudo tee -a /etc/hosts >/dev/null \
-      && echo "[OK] Added: 127.0.0.1 $h" \
-      || echo "[ERROR] Failed to add: 127.0.0.1 $h (sudo/permissions issue?)"
+    if [[ "$EUID" -eq 0 ]]; then
+      echo "127.0.0.1 $h" >> /etc/hosts \
+        && echo "[OK] Added: 127.0.0.1 $h" \
+        || echo "[ERROR] Failed to add: 127.0.0.1 $h"
+    elif command -v sudo >/dev/null 2>&1; then
+      echo "127.0.0.1 $h" | sudo tee -a /etc/hosts >/dev/null \
+        && echo "[OK] Added: 127.0.0.1 $h" \
+        || echo "[ERROR] Failed to add: 127.0.0.1 $h (sudo/permissions issue?)"
+    else
+      echo "[ERROR] Cannot modify /etc/hosts (not root and sudo not available)."
+      return 0
+    fi
   done
 }
 
@@ -125,6 +156,8 @@ Options:
                               Admin seed for Authelia + Catalyst (default: admin:admin:admin@example.com)
   --catalyst-url URL          External URL for Catalyst (default: https://catalyst.localhost)
   --authelia-url URL          External URL for Authelia (default: https://authelia.localhost)
+  --force                     Run non-interactively.
+                              Skips all prompts and assumes "yes" for actions.
   -h, --help                  Show this help and exit
 
 Examples:
@@ -155,6 +188,10 @@ while [[ $# -gt 0 ]]; do
       AUTHELIA_ADDR="$2"
       shift 2
       ;;
+    --force)
+      FORCE=true
+      shift
+      ;;  
     -h|--help)
       usage
       exit 0
@@ -234,11 +271,7 @@ echo "[INFO] Authelia URL:       $AUTHELIA_ADDR"
 echo "[INFO] Admin user (seed):  $ADMIN_USER_SEED"
 echo
 
-read -r -p "Continue with these values? [y/N]: " yn
-if [[ ! "$yn" =~ ^[Yy]$ ]]; then
-  echo "[INFO] Aborting."
-  exit 0
-fi
+confirm_or_force "Continue with these values?" || exit 0
 
 # Safety: warn if INSTALL_DIR exists and is non-empty
 if [[ -e "$INSTALL_DIR" && ! -d "$INSTALL_DIR" ]]; then
@@ -249,10 +282,15 @@ fi
 if [[ -d "$INSTALL_DIR" && -n "$(ls -A "$INSTALL_DIR" 2>/dev/null || true)" ]]; then
   echo "[WARN] Install directory already exists and is not empty:"
   echo "       $INSTALL_DIR"
-  read -r -p "Continue and potentially overwrite configs? [y/N]: " yn2
-  if [[ ! "$yn2" =~ ^[Yy]$ ]]; then
-    echo "[INFO] Aborting."
-    exit 0
+
+  if [[ "$FORCE" == "true" ]]; then
+    echo "[FORCE] Proceeding without prompt."
+  else
+    read -r -p "Continue and potentially overwrite configs? [y/N]: " yn2
+    if [[ ! "$yn2" =~ ^[Yy]$ ]]; then
+      echo "[INFO] Aborting."
+      exit 0
+    fi
   fi
 fi
 
@@ -339,7 +377,6 @@ echo "[INFO] Writing docker-compose.yml..."
 #       Docker Compose will substitute from .env at runtime.
 
 cat > docker-compose.yml <<'EOF'
-version: "3.7"
 
 services:
   nginx:

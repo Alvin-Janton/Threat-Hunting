@@ -188,7 +188,7 @@ chmod 700 <Your scripts name>
 
 ### Execute It
 ```bash
-./setup_catalyst.sh
+sudo ./setup_catalyst.sh
 ```
 >Note: Answer yes(y) to prompts when asked.
 
